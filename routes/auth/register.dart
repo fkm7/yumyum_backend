@@ -38,7 +38,7 @@ FutureOr<Response> onRequest(RequestContext context) async {
         firstName: firstName,
         lastName: lastName,
         email: email,
-        passwordHash: hashPassword(password),
+        passwordHash: context.read<PasswordHasher>().hash(password),
       );
 
   if (user == null) {

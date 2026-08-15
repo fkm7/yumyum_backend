@@ -44,11 +44,30 @@ Where the mock boundary goes:
 | Repository implementations | Integration tests against real PostgreSQL |
 | Models, pure logic | Plain unit tests, no mocks |
 
+## Passwords
+
+Passwords are stored as salted bcrypt digests. Credentials created under the
+previous scheme (unsalted SHA-256) cannot be converted without the plaintext,
+so they are still accepted at login and rewritten as bcrypt at that moment —
+the one point where the plaintext is available. The same path upgrades a
+bcrypt digest whose cost is below the current `BCRYPT_ROUNDS`.
+
+Two details worth knowing before changing this code:
+
+- bcrypt rejects inputs over 72 bytes. Passwords are reduced to a base64
+  SHA-256 token first, which keeps their full entropy and avoids both the
+  length limit and bcrypt's truncation at the first NUL byte.
+- `/auth/login` hashes even when no user matched. bcrypt is deliberately slow,
+  so returning early for an unknown address would make it measurably faster to
+  reject than a registered one, turning the generic error message into a user
+  enumeration oracle.
+
 ## Configuration
 
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `JWT_SECRET` | development fallback | Must be set in production; a warning is logged when it is not. |
+| `BCRYPT_ROUNDS` | `12` | bcrypt cost factor. Logarithmic — each increment doubles the work. Raising it migrates existing credentials on their next login. |
 | `DB_HOST` / `DB_PORT` | `localhost` / `5432` | |
 | `DB_NAME` / `DB_USER` / `DB_PASS` | `yumyum` / `felix` / `1997` | |
 

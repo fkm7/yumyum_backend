@@ -22,4 +22,10 @@ abstract class UserRepository {
     required String email,
     required String passwordHash,
   });
+
+  /// Replaces the stored password digest for [uid].
+  ///
+  /// Used to upgrade a credential in place after a successful login against an
+  /// outdated digest, which is the only moment the plaintext is available.
+  Future<void> updatePasswordHash(String uid, String passwordHash);
 }

@@ -1,5 +1,5 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/password_hasher.dart';
+import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
 import 'package:delmer_backend/models/user.dart';
 import 'package:delmer_backend/repositories/user_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -97,8 +97,15 @@ void main() {
         ),
       ).captured.single;
 
-      expect(captured, equals(hashPassword('hunter2')));
+      // Stored digests must be salted bcrypt, not the plaintext and not the
+      // old unsalted SHA-256.
+      expect(
+        captured,
+        isA<String>().having((h) => h, 'digest', startsWith(r'$2a$')),
+      );
       expect(captured, isNot(equals('hunter2')));
+      expect(captured, isNot(equals(legacySha256Digest('hunter2'))));
+      expect(testHasher.verify('hunter2', captured as String), isTrue);
     });
 
     test('responds 201 with tokens and the created user', () async {
@@ -122,7 +129,7 @@ void main() {
       final json = await jsonBody(response) as Map<String, dynamic>;
 
       expect((json['user']! as Map).containsKey('password_hash'), isFalse);
-      expect(json.toString(), isNot(contains(hashPassword('hunter2'))));
+      expect(json.toString(), isNot(contains(r'$2a$')));
     });
   });
 }

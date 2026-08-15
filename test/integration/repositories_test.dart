@@ -1,6 +1,7 @@
 @Tags(['integration'])
 library;
 
+import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
 import 'package:delmer_backend/db/database_service.dart';
 import 'package:delmer_backend/models/order.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_category_repository.dart';
@@ -212,6 +213,55 @@ void main() {
     test('returns null for an unknown email and uid', () async {
       expect(await users.findByEmail('nobody@example.com'), isNull);
       expect(await users.findByUid('no-such-uid'), isNull);
+    });
+
+    test('updates the stored password digest', () async {
+      final email = uniqueEmail();
+      final created = await users.create(
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: email,
+        passwordHash: 'old-digest',
+      );
+
+      await users.updatePasswordHash(created!.uid, 'new-digest');
+
+      final found = await users.findByEmail(email);
+      expect(found!.passwordHash, equals('new-digest'));
+    });
+
+    test('updating an unknown uid is a no-op rather than an error', () async {
+      await expectLater(
+        users.updatePasswordHash('no-such-uid', 'digest'),
+        completes,
+      );
+    });
+
+    // The migration end to end: a row stored under the old scheme verifies,
+    // gets rewritten as bcrypt, and still verifies afterwards. bcrypt digests
+    // are 60 characters, so this also proves the column is wide enough.
+    test('migrates a legacy digest to bcrypt and back out again', () async {
+      final hasher = BcryptPasswordHasher(rounds: 4);
+      final email = uniqueEmail();
+      final created = await users.create(
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: email,
+        passwordHash: legacySha256Digest('hunter2'),
+      );
+
+      final legacy = await users.findByEmail(email);
+      expect(hasher.verify('hunter2', legacy!.passwordHash!), isTrue);
+      expect(hasher.needsRehash(legacy.passwordHash!), isTrue);
+
+      await users.updatePasswordHash(created!.uid, hasher.hash('hunter2'));
+
+      final upgraded = await users.findByEmail(email);
+      expect(upgraded!.passwordHash, startsWith(r'$2a$'));
+      expect(upgraded.passwordHash, hasLength(60));
+      expect(hasher.verify('hunter2', upgraded.passwordHash!), isTrue);
+      expect(hasher.verify('wrong', upgraded.passwordHash!), isFalse);
+      expect(hasher.needsRehash(upgraded.passwordHash!), isFalse);
     });
   });
 

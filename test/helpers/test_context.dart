@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:delmer_backend/auth/authenticated_user.dart';
+import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
+import 'package:delmer_backend/auth/password_hasher.dart';
 import 'package:delmer_backend/auth/token_service.dart';
 import 'package:delmer_backend/repositories/category_repository.dart';
 import 'package:delmer_backend/repositories/order_repository.dart';
@@ -29,8 +31,17 @@ class MockProductRepository extends Mock implements ProductRepository {}
 /// A mock [OrderRepository].
 class MockOrderRepository extends Mock implements OrderRepository {}
 
+/// A mock [PasswordHasher], for asserting on how a route uses it.
+class MockPasswordHasher extends Mock implements PasswordHasher {}
+
 /// The [TokenService] used across route tests.
 const testTokens = TokenService(secret: 'test-secret');
+
+/// The [PasswordHasher] used across route tests.
+///
+/// Cost 4 is the bcrypt minimum. Production runs at 12; hashing at that cost
+/// in every auth test would add seconds to the suite for no extra coverage.
+final testHasher = BcryptPasswordHasher(rounds: 4);
 
 /// A [RequestContext] wired for a single route invocation.
 ///
@@ -43,6 +54,7 @@ class TestContext {
       request ?? Request.get(Uri.parse('http://localhost/')),
     );
     provide<TokenService>(testTokens);
+    provide<PasswordHasher>(testHasher);
   }
 
   /// The underlying mock handed to `onRequest`.
