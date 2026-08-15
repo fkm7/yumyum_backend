@@ -1,0 +1,9 @@
+tags:
+  integration:
+    # Integration tests need a live PostgreSQL instance (see docker-compose.yaml).
+    # Marking them skipped keeps them out of the default `dart test` run; opt in
+    # with the flag below, which overrides the skip:
+    #
+    #   docker compose up -d
+    #   dart test --tags integration --run-skipped
+    skip: "Needs a database: dart test --tags integration --run-skipped"

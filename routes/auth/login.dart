@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/jwt_service.dart';
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:postgres/postgres.dart';
+import 'package:delmer_backend/auth/password_hasher.dart';
+import 'package:delmer_backend/auth/token_service.dart';
+import 'package:delmer_backend/repositories/user_repository.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -27,45 +27,25 @@ FutureOr<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final conn = await context.read<DatabaseService>().connection;
-  final result = await conn.execute(
-    Sql.named('''
-      SELECT uid, first_name, last_name, email, password_hash, photo_url
-      FROM users WHERE email = @email
-    '''),
-    parameters: {'email': email},
-  );
+  final user = await context.read<UserRepository>().findByEmail(email);
 
-  if (result.isEmpty) {
+  // An unknown address and a wrong password answer identically, so the endpoint
+  // cannot be used to enumerate registered users.
+  if (user == null || user.passwordHash != hashPassword(password)) {
     return Response.json(
       statusCode: 401,
       body: {'error': 'Invalid email or password'},
     );
   }
 
-  final user = result.first.toColumnMap();
-  if (user['password_hash'] != hashPassword(password)) {
-    return Response.json(
-      statusCode: 401,
-      body: {'error': 'Invalid email or password'},
-    );
-  }
-
-  final accessToken = generateAccessToken(user['uid'] as String);
-  final refreshToken = generateRefreshToken(user['uid'] as String);
+  final tokens = context.read<TokenService>();
   return Response.json(
     body: {
-      'access_token': accessToken,
-      'access_token_expires_in': accessTokenExpiresIn.inSeconds,
-      'refresh_token': refreshToken,
-      'refresh_token_expires_in': refreshTokenExpiresIn.inSeconds,
-      'user': {
-        'uid': user['uid'],
-        'first_name': user['first_name'],
-        'last_name': user['last_name'],
-        'email': user['email'],
-        'photo_url': user['photo_url'],
-      },
+      'access_token': tokens.generateAccessToken(user.uid),
+      'access_token_expires_in': tokens.accessTokenExpiresIn.inSeconds,
+      'refresh_token': tokens.generateRefreshToken(user.uid),
+      'refresh_token_expires_in': tokens.refreshTokenExpiresIn.inSeconds,
+      'user': user.toJson(),
     },
   );
 }
