@@ -211,7 +211,7 @@ void main() {
       test('returns a refresh token that verifies to the uid', () async {
         final json = await body();
         expect(
-          testTokens.verifyRefreshToken(json['refresh_token'] as String),
+          testTokens.verifyRefreshToken(json['refresh_token'] as String)?.uid,
           equals('user-1'),
         );
       });
@@ -234,6 +234,24 @@ void main() {
             'photo_url': '',
           }),
         );
+      });
+
+      // Without a stored record the issued refresh token could never be
+      // revoked, so a session would outlive any logout.
+      test('records the refresh token so the session can be revoked', () async {
+        final context = TestContext(request: _credentials())
+          ..provide<UserRepository>(_repository(found: _user()));
+
+        final response = await route.onRequest(context.context);
+        final json = await jsonBody(response) as Map<String, dynamic>;
+
+        final claims =
+            testTokens.verifyRefreshToken(json['refresh_token'] as String)!;
+        final record = context.refreshTokens.records[claims.tokenId];
+
+        expect(record, isNotNull);
+        expect(record!.userId, equals('user-1'));
+        expect(record.isRevoked, isFalse);
       });
 
       // The digest is loaded for the comparison, so the response is the place

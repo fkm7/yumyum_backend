@@ -68,7 +68,8 @@ void main() {
       });
 
       test('with a refresh token instead of an access token', () async {
-        final refresh = testTokens.generateRefreshToken('user-1');
+        final refresh =
+            testTokens.generateRefreshToken('user-1', tokenId: 'jti-1');
         final response = await _invoke(authorization: 'Bearer $refresh');
         expect(response.statusCode, equals(401));
       });

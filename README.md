@@ -62,6 +62,28 @@ Two details worth knowing before changing this code:
   reject than a registered one, turning the generic error message into a user
   enumeration oracle.
 
+## Sessions
+
+Access tokens are stateless and short-lived. Refresh tokens are not: each one
+has a row in `refresh_tokens`, carries that row's id as its `jti`, and is only
+accepted while the row exists unrevoked. Verifying the signature is not enough,
+which is what makes revocation possible at all.
+
+Exchanging a refresh token rotates it — the presented token is revoked and a
+successor is issued in the same *family*. Presenting an already-rotated token
+therefore means a copy is in circulation, so the whole family is revoked and
+every device on that chain has to log in again. `POST /auth/logout` revokes a
+family outright; other sessions for the same user are unaffected.
+
+Two operational notes:
+
+- Refresh tokens issued before this existed have no `jti` and are refused, so
+  deploying this signs existing sessions out. Grandfathering them would have
+  meant leaving unrevocable tokens live for their full lifetime.
+- Rows are not deleted when they expire. `RefreshTokenRepository.deleteExpired`
+  prunes them and needs to be run periodically, or the table grows without
+  bound.
+
 ## Configuration
 
 | Variable | Default | Notes |

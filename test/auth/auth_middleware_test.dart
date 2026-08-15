@@ -79,7 +79,8 @@ void main() {
       }
 
       test('a refresh token presented as an access token', () async {
-        final refresh = testTokens.generateRefreshToken('user-1');
+        final refresh =
+            testTokens.generateRefreshToken('user-1', tokenId: 'jti-1');
         final run = _Run(authorization: 'Bearer $refresh');
 
         expect((await run.call()).statusCode, equals(401));

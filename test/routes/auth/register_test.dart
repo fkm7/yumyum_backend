@@ -118,7 +118,7 @@ void main() {
         equals('user-1'),
       );
       expect(
-        testTokens.verifyRefreshToken(json['refresh_token'] as String),
+        testTokens.verifyRefreshToken(json['refresh_token'] as String)?.uid,
         equals('user-1'),
       );
       expect(json['user'], equals(_created.toJson()));

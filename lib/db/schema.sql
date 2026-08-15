@@ -69,6 +69,30 @@ CREATE INDEX IF NOT EXISTS orders_user_id_order_time_idx
 -- keep a NULL user_id and are therefore invisible to the per-user listing.
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(uid);
 
+-- One row per issued refresh token. A refresh token carries this row's id as
+-- its `jti` claim, which is what makes it revocable: without a matching
+-- unrevoked row, a correctly signed token is still refused.
+--
+-- family_id links a rotation chain. Rotating a token revokes it and issues a
+-- successor in the same family, so presenting an already-rotated token means
+-- the chain leaked and the whole family is revoked.
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+  family_id TEXT NOT NULL,
+  issued_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ,
+  replaced_by TEXT
+);
+
+CREATE INDEX IF NOT EXISTS refresh_tokens_family_id_idx
+  ON refresh_tokens (family_id);
+
+-- Supports pruning; rows are not removed when they expire, only when swept.
+CREATE INDEX IF NOT EXISTS refresh_tokens_expires_at_idx
+  ON refresh_tokens (expires_at);
+
 INSERT INTO categories (id, title_en, title_ru, title_uz, icon) VALUES
   (1, 'Burgers', 'Бургеры', 'Burgerlar', 'https://picsum.photos/seed/burgers/200/200'),
   (2, 'Pizza', 'Пицца', 'Pizza', 'https://picsum.photos/seed/pizza/200/200'),

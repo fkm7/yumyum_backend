@@ -10,8 +10,11 @@ import 'package:delmer_backend/repositories/order_repository.dart';
 import 'package:delmer_backend/repositories/product_repository.dart';
 import 'package:delmer_backend/repositories/restaurant_repository.dart';
 import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:delmer_backend/services/session_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
+
+import 'fakes.dart' show InMemoryRefreshTokenRepository, StubUserRepository;
 
 /// A mock [RequestContext].
 class MockRequestContext extends Mock implements RequestContext {}
@@ -34,6 +37,9 @@ class MockOrderRepository extends Mock implements OrderRepository {}
 /// A mock [PasswordHasher], for asserting on how a route uses it.
 class MockPasswordHasher extends Mock implements PasswordHasher {}
 
+/// A mock [SessionService].
+class MockSessionService extends Mock implements SessionService {}
+
 /// The [TokenService] used across route tests.
 const testTokens = TokenService(secret: 'test-secret');
 
@@ -55,7 +61,18 @@ class TestContext {
     );
     provide<TokenService>(testTokens);
     provide<PasswordHasher>(testHasher);
+    provide<SessionService>(
+      SessionService(
+        tokens: testTokens,
+        refreshTokens: refreshTokens,
+        users: StubUserRepository(),
+      ),
+    );
   }
+
+  /// Records issued by the default [SessionService], open for inspection.
+  final InMemoryRefreshTokenRepository refreshTokens =
+      InMemoryRefreshTokenRepository();
 
   /// The underlying mock handed to `onRequest`.
   final MockRequestContext context = MockRequestContext();

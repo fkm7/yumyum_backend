@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:delmer_backend/auth/password_hasher.dart';
-import 'package:delmer_backend/auth/token_service.dart';
 import 'package:delmer_backend/models/user.dart';
 import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:delmer_backend/services/session_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -59,15 +59,9 @@ Response _invalidCredentials() => Response.json(
       body: {'error': 'Invalid email or password'},
     );
 
-Response _session(RequestContext context, User user) {
-  final tokens = context.read<TokenService>();
+Future<Response> _session(RequestContext context, User user) async {
+  final tokens = await context.read<SessionService>().start(user.uid);
   return Response.json(
-    body: {
-      'access_token': tokens.generateAccessToken(user.uid),
-      'access_token_expires_in': tokens.accessTokenExpiresIn.inSeconds,
-      'refresh_token': tokens.generateRefreshToken(user.uid),
-      'refresh_token_expires_in': tokens.refreshTokenExpiresIn.inSeconds,
-      'user': user.toJson(),
-    },
+    body: {...tokens.toJson(), 'user': user.toJson()},
   );
 }
