@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:postgres/postgres.dart';
 
-
 /// A singleton service for managing the database connection.
 class DatabaseService {
   DatabaseService._();

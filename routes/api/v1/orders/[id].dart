@@ -1,28 +1,21 @@
-import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:postgres/postgres.dart';
+import 'dart:async';
 
-Future<Response> onRequest(RequestContext context, String id) async {
+import 'package:dart_frog/dart_frog.dart';
+import 'package:delmer_backend/auth/authenticated_user.dart';
+import 'package:delmer_backend/repositories/order_repository.dart';
+
+FutureOr<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: 405);
   }
 
-  final conn = await context.read<DatabaseService>().connection;
-  final result = await conn.execute(
-    Sql.named('''
-      SELECT id, cost, status, order_time, restaurant_info, products,
-             delivery_address, courier, payment_detail
-      FROM orders WHERE id = @id
-    '''),
-    parameters: {'id': id},
-  );
+  final order = await context.read<OrderRepository>().findById(id);
 
-  if (result.isEmpty) {
+  // A caller must not be able to tell someone else's order id from an
+  // unused one, so a foreign order answers 404 rather than 403.
+  if (order == null || order.userId != context.read<AuthenticatedUser>().uid) {
     return Response.json(statusCode: 404, body: {'error': 'Not found'});
   }
 
-  final order = result.first.toColumnMap();
-  order['order_time'] = (order['order_time'] as DateTime).toIso8601String();
-
-  return Response.json(body: order);
+  return Response.json(body: order.toJson());
 }

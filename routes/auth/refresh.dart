@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/jwt_service.dart';
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:postgres/postgres.dart';
+import 'package:delmer_backend/auth/token_service.dart';
+import 'package:delmer_backend/repositories/user_repository.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -26,7 +25,8 @@ FutureOr<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final uid = verifyRefreshToken(refreshToken);
+  final tokens = context.read<TokenService>();
+  final uid = tokens.verifyRefreshToken(refreshToken);
   if (uid == null) {
     return Response.json(
       statusCode: 401,
@@ -34,25 +34,19 @@ FutureOr<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final conn = await context.read<DatabaseService>().connection;
-  final result = await conn.execute(
-    Sql.named('SELECT uid FROM users WHERE uid = @uid'),
-    parameters: {'uid': uid},
-  );
-
-  if (result.isEmpty) {
+  final user = await context.read<UserRepository>().findByUid(uid);
+  if (user == null) {
     return Response.json(statusCode: 404, body: {'error': 'User not found'});
   }
 
-  final newAccessToken = generateAccessToken(uid);
-  final newRefreshToken = generateRefreshToken(uid);
-
+  // NOTE: the presented refresh token stays valid until it expires. Revocation
+  // and rotation need a persisted token store, which does not exist yet.
   return Response.json(
     body: {
-      'access_token': newAccessToken,
-      'access_token_expires_in': accessTokenExpiresIn.inSeconds,
-      'refresh_token': newRefreshToken,
-      'refresh_token_expires_in': refreshTokenExpiresIn.inSeconds,
+      'access_token': tokens.generateAccessToken(uid),
+      'access_token_expires_in': tokens.accessTokenExpiresIn.inSeconds,
+      'refresh_token': tokens.generateRefreshToken(uid),
+      'refresh_token_expires_in': tokens.refreshTokenExpiresIn.inSeconds,
     },
   );
 }

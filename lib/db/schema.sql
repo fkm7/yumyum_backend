@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(uid),
   cost DOUBLE PRECISION NOT NULL,
   status TEXT NOT NULL,
   order_time TIMESTAMPTZ NOT NULL,
@@ -59,6 +60,14 @@ CREATE TABLE IF NOT EXISTS orders (
   courier JSONB,
   payment_detail JSONB
 );
+
+-- Orders are always listed for one user, newest first.
+CREATE INDEX IF NOT EXISTS orders_user_id_order_time_idx
+  ON orders (user_id, order_time DESC);
+
+-- For databases created before orders were attributed to a user. Existing rows
+-- keep a NULL user_id and are therefore invisible to the per-user listing.
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(uid);
 
 INSERT INTO categories (id, title_en, title_ru, title_uz, icon) VALUES
   (1, 'Burgers', 'Бургеры', 'Burgerlar', 'https://picsum.photos/seed/burgers/200/200'),

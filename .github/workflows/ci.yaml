@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: felix
+          POSTGRES_PASSWORD: "1997"
+          POSTGRES_DB: yumyum
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: dart analyze --fatal-infos --fatal-warnings
+
+      - name: Run unit tests
+        run: dart test --coverage=coverage
+
+      - name: Load schema
+        env:
+          PGPASSWORD: "1997"
+        run: psql -h localhost -U felix -d yumyum -f lib/db/schema.sql
+
+      - name: Run integration tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_NAME: yumyum
+          DB_USER: felix
+          DB_PASS: "1997"
+        run: dart test --tags integration --run-skipped
+
+      - name: Report coverage
+        run: |
+          dart pub global activate coverage
+          dart pub global run coverage:format_coverage \
+            --lcov --in=coverage --out=coverage/lcov.info \
+            --report-on=lib

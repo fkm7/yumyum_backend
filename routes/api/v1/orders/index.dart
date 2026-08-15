@@ -1,9 +1,16 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:postgres/postgres.dart';
+import 'package:delmer_backend/auth/authenticated_user.dart';
+import 'package:delmer_backend/models/cart_item.dart';
+import 'package:delmer_backend/models/order.dart';
+import 'package:delmer_backend/repositories/order_repository.dart';
+import 'package:delmer_backend/repositories/product_repository.dart';
+import 'package:delmer_backend/repositories/restaurant_repository.dart';
+import 'package:delmer_backend/services/order_service.dart';
+import 'package:uuid/uuid.dart';
+
+const _uuid = Uuid();
 
 FutureOr<Response> onRequest(RequestContext context) async {
   return switch (context.request.method) {
@@ -11,6 +18,12 @@ FutureOr<Response> onRequest(RequestContext context) async {
     HttpMethod.post => await _createOrder(context),
     _ => Response(statusCode: 405),
   };
+}
+
+Future<Response> _getOrders(RequestContext context) async {
+  final user = context.read<AuthenticatedUser>();
+  final orders = await context.read<OrderRepository>().findByUser(user.uid);
+  return Response.json(body: orders.map((o) => o.toJson()).toList());
 }
 
 Future<Response> _createOrder(RequestContext context) async {
@@ -21,128 +34,92 @@ Future<Response> _createOrder(RequestContext context) async {
     return Response.json(statusCode: 400, body: {'error': 'Invalid JSON'});
   }
 
-  final restaurantId = body['restaurantId'] as int?;
-  final orderProducts = body['products'] as List<dynamic>?;
-
-  if (restaurantId == null || orderProducts == null || orderProducts.isEmpty) {
+  final restaurantId = body['restaurantId'];
+  if (restaurantId is! int) {
     return Response.json(
       statusCode: 422,
-      body: {'error': 'restaurantId and products are required'},
+      body: {'error': 'restaurantId is required and must be an integer'},
     );
   }
 
-  final conn = await context.read<DatabaseService>().connection;
+  final rawProducts = body['products'];
+  if (rawProducts is! List || rawProducts.isEmpty) {
+    return Response.json(
+      statusCode: 422,
+      body: {'error': 'products is required and must be a non-empty array'},
+    );
+  }
 
-  final restaurantResult = await conn.execute(
-    Sql.named('''
-      SELECT id, name, is_open, rating, logo, address, image, category,
-             start_time, end_time, description, phone_number, delivery_cost,
-             min_delivery_time, max_delivery_time, free_delivery_from,
-             product_categories
-      FROM restaurants WHERE id = @id
-    '''),
-    parameters: {'id': restaurantId},
-  );
-  if (restaurantResult.isEmpty) {
+  // Parsing is total: a malformed entry yields null and a 422, where the
+  // previous `as int` casts threw and surfaced as a 500.
+  final requested = <CartItem>[];
+  for (final entry in rawProducts) {
+    final item = CartItem.tryParse(entry);
+    if (item == null) {
+      return Response.json(
+        statusCode: 422,
+        body: {
+          'error': 'each product needs an integer id and a positive count',
+        },
+      );
+    }
+    requested.add(item);
+  }
+
+  final restaurant =
+      await context.read<RestaurantRepository>().findById(restaurantId);
+  if (restaurant == null) {
     return Response.json(
       statusCode: 404,
       body: {'error': 'Restaurant not found'},
     );
   }
-  final restaurant = restaurantResult.first.toColumnMap();
 
-  final orderedProducts = <Map<String, dynamic>>[];
-  var cost = 0.0;
+  final available = await context
+      .read<ProductRepository>()
+      .findByIds(requested.map((i) => i.productId).toList());
 
-  for (final item in orderProducts) {
-    final itemMap = item as Map<String, dynamic>;
-    final productId = itemMap['id'] as int;
-    final count = (itemMap['count'] as int?) ?? 1;
-
-    final productResult = await conn.execute(
-      Sql.named('''
-        SELECT id, restaurant_id AS restaurant, category, price, status,
-               title_en, title_ru, title_uz, image, description
-        FROM products WHERE id = @id
-      '''),
-      parameters: {'id': productId},
-    );
-    if (productResult.isEmpty) continue;
-    final product = productResult.first.toColumnMap();
-
-    final price = (product['price'] as num).toDouble();
-    final subTotal = price * count;
-    cost += subTotal;
-
-    orderedProducts.add({
-      'id': product['id'],
-      'price': price,
-      'total': cost,
-      'count': count,
-      'status': product['status'],
-      'image': product['image'],
-      'title_en': product['title_en'],
-      'title_ru': product['title_ru'],
-      'title_uz': product['title_uz'],
-      'category': product['category'],
-      'sub_total': subTotal,
-      'description': product['description'],
-      'institution': product['restaurant'],
-    });
-  }
-
-  final orderId = DateTime.now().millisecondsSinceEpoch.toString();
-  final orderTime = DateTime.now();
-  final deliveryAddress = body['deliveryAddress'] as Map<String, dynamic>?;
-
-  await conn.execute(
-    Sql.named('''
-      INSERT INTO orders
-        (id, cost, status, order_time, restaurant_info, products, delivery_address, courier, payment_detail)
-      VALUES
-        (@id, @cost, @status, @order_time, @restaurant_info::jsonb, @products::jsonb, @delivery_address::jsonb, NULL, NULL)
-    '''),
-    parameters: {
-      'id': orderId,
-      'cost': cost,
-      'status': 'received',
-      'order_time': orderTime,
-      'restaurant_info': jsonEncode(restaurant),
-      'products': jsonEncode(orderedProducts),
-      'delivery_address':
-          deliveryAddress == null ? null : jsonEncode(deliveryAddress),
-    },
+  final result = buildOrder(
+    orderId: _uuid.v4(),
+    userId: context.read<AuthenticatedUser>().uid,
+    restaurant: restaurant,
+    available: available,
+    requested: requested,
+    orderTime: DateTime.now().toUtc(),
+    deliveryAddress: body['deliveryAddress'] as Map<String, dynamic>?,
   );
 
-  return Response.json(
-    statusCode: 201,
-    body: {
-      'id': orderId,
-      'cost': cost,
-      'status': 'received',
-      'order_time': orderTime.toIso8601String(),
-      'restaurant_info': restaurant,
-      'products': orderedProducts,
-      'delivery_address': deliveryAddress,
-      'courier': null,
-      'payment_detail': null,
-    },
-  );
+  // Exhaustive over the sealed OrderBuildResult: a new failure mode added to
+  // the service will not compile until it is handled here.
+  return switch (result) {
+    OrderBuilt(:final order) => await _persist(context, order),
+    EmptyCart() => Response.json(
+        statusCode: 422,
+        body: {'error': 'products is required and must be a non-empty array'},
+      ),
+    RestaurantClosed() => Response.json(
+        statusCode: 409,
+        body: {'error': 'Restaurant is currently closed'},
+      ),
+    ProductsNotFound(:final productIds) => Response.json(
+        statusCode: 404,
+        body: {'error': 'Products not found', 'product_ids': productIds},
+      ),
+    ProductsFromOtherRestaurant(:final productIds) => Response.json(
+        statusCode: 422,
+        body: {
+          'error': 'Products do not belong to this restaurant',
+          'product_ids': productIds,
+        },
+      ),
+    ProductsUnavailable(:final productIds) => Response.json(
+        statusCode: 409,
+        body: {'error': 'Products are unavailable', 'product_ids': productIds},
+      ),
+  };
 }
 
-Future<Response> _getOrders(RequestContext context) async {
-  final conn = await context.read<DatabaseService>().connection;
-  final result = await conn.execute('''
-    SELECT id, cost, status, order_time, restaurant_info, products,
-           delivery_address, courier, payment_detail
-    FROM orders ORDER BY order_time DESC
-  ''');
-
-  final orders = result.map((row) {
-    final order = row.toColumnMap();
-    order['order_time'] = (order['order_time'] as DateTime).toIso8601String();
-    return order;
-  }).toList();
-
-  return Response.json(body: orders);
+Future<Response> _persist(RequestContext context, Order order) async {
+  final saved = await context.read<OrderRepository>().create(order);
+  return Response.json(statusCode: 201, body: saved.toJson());
 }

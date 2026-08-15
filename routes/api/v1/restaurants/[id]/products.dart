@@ -1,8 +1,10 @@
-import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:postgres/postgres.dart';
+import 'dart:async';
 
-Future<Response> onRequest(RequestContext context, String id) async {
+import 'package:dart_frog/dart_frog.dart';
+import 'package:delmer_backend/repositories/product_repository.dart';
+import 'package:delmer_backend/repositories/restaurant_repository.dart';
+
+FutureOr<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: 405);
   }
@@ -12,15 +14,18 @@ Future<Response> onRequest(RequestContext context, String id) async {
     return Response.json(statusCode: 400, body: {'error': 'Invalid id'});
   }
 
-  final conn = await context.read<DatabaseService>().connection;
-  final result = await conn.execute(
-    Sql.named('''
-      SELECT id, restaurant_id AS restaurant, category, price, status,
-             title_en, title_ru, title_uz, image, description
-      FROM products WHERE restaurant_id = @id ORDER BY id
-    '''),
-    parameters: {'id': restaurantId},
-  );
+  // An unknown restaurant used to return an empty list with a 200, which is
+  // indistinguishable from a real restaurant that has no products yet.
+  final restaurant =
+      await context.read<RestaurantRepository>().findById(restaurantId);
+  if (restaurant == null) {
+    return Response.json(
+      statusCode: 404,
+      body: {'error': 'Restaurant not found'},
+    );
+  }
 
-  return Response.json(body: result.map((row) => row.toColumnMap()).toList());
+  final products =
+      await context.read<ProductRepository>().findByRestaurant(restaurantId);
+  return Response.json(body: products.map((p) => p.toJson()).toList());
 }
