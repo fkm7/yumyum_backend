@@ -44,11 +44,52 @@ Where the mock boundary goes:
 | Repository implementations | Integration tests against real PostgreSQL |
 | Models, pure logic | Plain unit tests, no mocks |
 
+## Passwords
+
+Passwords are stored as salted bcrypt digests. Credentials created under the
+previous scheme (unsalted SHA-256) cannot be converted without the plaintext,
+so they are still accepted at login and rewritten as bcrypt at that moment —
+the one point where the plaintext is available. The same path upgrades a
+bcrypt digest whose cost is below the current `BCRYPT_ROUNDS`.
+
+Two details worth knowing before changing this code:
+
+- bcrypt rejects inputs over 72 bytes. Passwords are reduced to a base64
+  SHA-256 token first, which keeps their full entropy and avoids both the
+  length limit and bcrypt's truncation at the first NUL byte.
+- `/auth/login` hashes even when no user matched. bcrypt is deliberately slow,
+  so returning early for an unknown address would make it measurably faster to
+  reject than a registered one, turning the generic error message into a user
+  enumeration oracle.
+
+## Sessions
+
+Access tokens are stateless and short-lived. Refresh tokens are not: each one
+has a row in `refresh_tokens`, carries that row's id as its `jti`, and is only
+accepted while the row exists unrevoked. Verifying the signature is not enough,
+which is what makes revocation possible at all.
+
+Exchanging a refresh token rotates it — the presented token is revoked and a
+successor is issued in the same *family*. Presenting an already-rotated token
+therefore means a copy is in circulation, so the whole family is revoked and
+every device on that chain has to log in again. `POST /auth/logout` revokes a
+family outright; other sessions for the same user are unaffected.
+
+Two operational notes:
+
+- Refresh tokens issued before this existed have no `jti` and are refused, so
+  deploying this signs existing sessions out. Grandfathering them would have
+  meant leaving unrevocable tokens live for their full lifetime.
+- Rows are not deleted when they expire. `RefreshTokenRepository.deleteExpired`
+  prunes them and needs to be run periodically, or the table grows without
+  bound.
+
 ## Configuration
 
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `JWT_SECRET` | development fallback | Must be set in production; a warning is logged when it is not. |
+| `BCRYPT_ROUNDS` | `12` | bcrypt cost factor. Logarithmic — each increment doubles the work. Raising it migrates existing credentials on their next login. |
 | `DB_HOST` / `DB_PORT` | `localhost` / `5432` | |
 | `DB_NAME` / `DB_USER` / `DB_PASS` | `yumyum` / `felix` / `1997` | |
 

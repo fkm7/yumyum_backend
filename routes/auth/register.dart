@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:delmer_backend/auth/password_hasher.dart';
-import 'package:delmer_backend/auth/token_service.dart';
 import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:delmer_backend/services/session_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -38,7 +38,7 @@ FutureOr<Response> onRequest(RequestContext context) async {
         firstName: firstName,
         lastName: lastName,
         email: email,
-        passwordHash: hashPassword(password),
+        passwordHash: context.read<PasswordHasher>().hash(password),
       );
 
   if (user == null) {
@@ -48,15 +48,9 @@ FutureOr<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final tokens = context.read<TokenService>();
+  final tokens = await context.read<SessionService>().start(user.uid);
   return Response.json(
     statusCode: 201,
-    body: {
-      'access_token': tokens.generateAccessToken(user.uid),
-      'access_token_expires_in': tokens.accessTokenExpiresIn.inSeconds,
-      'refresh_token': tokens.generateRefreshToken(user.uid),
-      'refresh_token_expires_in': tokens.refreshTokenExpiresIn.inSeconds,
-      'user': user.toJson(),
-    },
+    body: {...tokens.toJson(), 'user': user.toJson()},
   );
 }

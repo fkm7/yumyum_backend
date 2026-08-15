@@ -78,4 +78,15 @@ class PostgresUserRepository implements UserRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<void> updatePasswordHash(String uid, String passwordHash) async {
+    final conn = await database.connection;
+    await conn.execute(
+      Sql.named(
+        'UPDATE users SET password_hash = @password_hash WHERE uid = @uid',
+      ),
+      parameters: {'uid': uid, 'password_hash': passwordHash},
+    );
+  }
 }

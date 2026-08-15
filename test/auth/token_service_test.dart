@@ -27,14 +27,40 @@ void main() {
 
     group('refresh tokens', () {
       test('round-trips the uid', () {
-        final token = service.generateRefreshToken('user-1');
-        expect(service.verifyRefreshToken(token), equals('user-1'));
+        final token = service.generateRefreshToken('user-1', tokenId: 'jti-1');
+        expect(service.verifyRefreshToken(token)?.uid, equals('user-1'));
+      });
+
+      test('round-trips the token id', () {
+        final token = service.generateRefreshToken('user-1', tokenId: 'jti-1');
+        expect(service.verifyRefreshToken(token)?.tokenId, equals('jti-1'));
+      });
+
+      // Tokens minted before revocation existed carry no jti, so there is no
+      // record to check them against. Refusing them is deliberate: accepting
+      // them would leave unrevocable tokens in circulation for their full
+      // lifetime. Existing sessions have to log in again.
+      test('is rejected when it carries no jti', () {
+        final token = JWT({'uid': 'user-1', 'token_type': 'refresh'})
+            .sign(SecretKey(_secret));
+        expect(service.verifyRefreshToken(token), isNull);
+      });
+
+      test('is rejected when the jti is empty', () {
+        final token = service.generateRefreshToken('user-1', tokenId: '');
+        expect(service.verifyRefreshToken(token), isNull);
+      });
+
+      test('is rejected when the jti is not a string', () {
+        final token = JWT({'uid': 'user-1', 'token_type': 'refresh', 'jti': 42})
+            .sign(SecretKey(_secret));
+        expect(service.verifyRefreshToken(token), isNull);
       });
 
       // This is the check that stops a long-lived refresh token from being
       // used as an access token against the API.
       test('is rejected by verifyAccessToken', () {
-        final token = service.generateRefreshToken('user-1');
+        final token = service.generateRefreshToken('user-1', tokenId: 'jti-1');
         expect(service.verifyAccessToken(token), isNull);
       });
     });
@@ -54,7 +80,7 @@ void main() {
           secret: _secret,
           refreshTokenExpiresIn: Duration(seconds: -1),
         );
-        final token = expired.generateRefreshToken('user-1');
+        final token = expired.generateRefreshToken('user-1', tokenId: 'jti-1');
         expect(service.verifyRefreshToken(token), isNull);
       });
 

@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/token_service.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:delmer_backend/services/session_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -25,28 +24,20 @@ FutureOr<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final tokens = context.read<TokenService>();
-  final uid = tokens.verifyRefreshToken(refreshToken);
-  if (uid == null) {
-    return Response.json(
-      statusCode: 401,
-      body: {'error': 'Invalid or expired refresh token'},
-    );
-  }
+  final result = await context.read<SessionService>().rotate(refreshToken);
 
-  final user = await context.read<UserRepository>().findByUid(uid);
-  if (user == null) {
-    return Response.json(statusCode: 404, body: {'error': 'User not found'});
-  }
-
-  // NOTE: the presented refresh token stays valid until it expires. Revocation
-  // and rotation need a persisted token store, which does not exist yet.
-  return Response.json(
-    body: {
-      'access_token': tokens.generateAccessToken(uid),
-      'access_token_expires_in': tokens.accessTokenExpiresIn.inSeconds,
-      'refresh_token': tokens.generateRefreshToken(uid),
-      'refresh_token_expires_in': tokens.refreshTokenExpiresIn.inSeconds,
-    },
-  );
+  // Reuse is answered exactly like an ordinary rejection: the caller is either
+  // an attacker replaying a stolen token or a client that lost a response, and
+  // neither should be told which.
+  return switch (result) {
+    RefreshSucceeded(:final tokens) => Response.json(body: tokens.toJson()),
+    RefreshRejected() || RefreshReuseDetected() => Response.json(
+        statusCode: 401,
+        body: {'error': 'Invalid or expired refresh token'},
+      ),
+    RefreshUserMissing() => Response.json(
+        statusCode: 404,
+        body: {'error': 'User not found'},
+      ),
+  };
 }

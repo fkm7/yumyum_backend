@@ -20,6 +20,21 @@ enum TokenType {
   final String value;
 }
 
+/// The claims carried by a verified refresh token.
+class RefreshTokenClaims {
+  /// Constructs [RefreshTokenClaims].
+  const RefreshTokenClaims({required this.uid, required this.tokenId});
+
+  /// The user the token was issued to.
+  final String uid;
+
+  /// The `jti` claim, identifying the stored record for this token.
+  ///
+  /// This is what makes a refresh token revocable: verification proves the
+  /// token was signed by this server, and the id says which one it is.
+  final String tokenId;
+}
+
 /// Issues and verifies JWTs.
 ///
 /// The signing secret and lifetimes are constructor arguments so that tests can
@@ -66,38 +81,66 @@ class TokenService {
   final Duration refreshTokenExpiresIn;
 
   /// Generates a short-lived access token for the given user ID (uid).
-  String generateAccessToken(String uid) =>
-      _generate(uid, TokenType.access, accessTokenExpiresIn);
+  String generateAccessToken(String uid) => _generate(
+        {'uid': uid, 'token_type': TokenType.access.value},
+        accessTokenExpiresIn,
+      );
 
-  /// Generates a long-lived refresh token for the given user ID (uid).
-  String generateRefreshToken(String uid) =>
-      _generate(uid, TokenType.refresh, refreshTokenExpiresIn);
+  /// Generates a long-lived refresh token identified by [tokenId].
+  ///
+  /// [tokenId] is written as the `jti` claim and must match a stored record,
+  /// or the token cannot be verified.
+  String generateRefreshToken(String uid, {required String tokenId}) =>
+      _generate(
+        {
+          'uid': uid,
+          'token_type': TokenType.refresh.value,
+          'jti': tokenId,
+        },
+        refreshTokenExpiresIn,
+      );
 
   /// Returns the uid from a valid access token, or null if invalid/expired.
-  String? verifyAccessToken(String token) => _verify(token, TokenType.access);
+  String? verifyAccessToken(String token) {
+    final payload = _verify(token, TokenType.access);
+    final uid = payload?['uid'];
+    return uid is String && uid.isNotEmpty ? uid : null;
+  }
 
-  /// Returns the uid from a valid refresh token, or null if invalid/expired.
-  String? verifyRefreshToken(String token) => _verify(token, TokenType.refresh);
+  /// Returns the claims of a valid refresh token, or null if invalid/expired.
+  ///
+  /// A token with no `jti` is refused: it predates revocable refresh tokens
+  /// and there is no record to check it against, so it cannot be revoked.
+  RefreshTokenClaims? verifyRefreshToken(String token) {
+    final payload = _verify(token, TokenType.refresh);
+    if (payload == null) return null;
 
-  String _generate(String uid, TokenType type, Duration expiresIn) {
-    final jwt = JWT({'uid': uid, 'token_type': type.value}, issuer: issuer);
+    final uid = payload['uid'];
+    final tokenId = payload['jti'];
+    if (uid is! String || uid.isEmpty) return null;
+    if (tokenId is! String || tokenId.isEmpty) return null;
+
+    return RefreshTokenClaims(uid: uid, tokenId: tokenId);
+  }
+
+  String _generate(Map<String, dynamic> claims, Duration expiresIn) {
+    final jwt = JWT(claims, issuer: issuer);
     return jwt.sign(SecretKey(secret), expiresIn: expiresIn);
   }
 
-  String? _verify(String token, TokenType expected) {
+  Map<String, dynamic>? _verify(String token, TokenType expected) {
     try {
       final jwt = JWT.verify(token, SecretKey(secret), issuer: issuer);
       final payload = jwt.payload;
       if (payload is! Map<String, dynamic>) return null;
       if (payload['token_type'] != expected.value) return null;
-      final uid = payload['uid'];
-      if (uid is! String || uid.isEmpty) return null;
-      return uid;
-      // The `is!` guards above matter: a validly-signed token whose payload is
-      // not a map, or whose `uid` is not a string, used to reach an unguarded
-      // `as` cast and throw a TypeError past the JWTException-only catch,
-      // surfacing as a 500. The broad catch is belt-and-braces on top of that:
-      // verification never throws, it returns null.
+      return payload;
+      // The `is!` guard above matters, as do the claim guards in the callers:
+      // a validly-signed token whose payload is not a map, or whose `uid` is
+      // not a string, used to reach an unguarded `as` cast and throw a
+      // TypeError past the JWTException-only catch, surfacing as a 500. The
+      // broad catch is belt-and-braces on top of that: verification never
+      // throws, it returns null.
     } catch (_) {
       return null;
     }

@@ -1,32 +1,32 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/token_service.dart';
-import 'package:delmer_backend/models/user.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:delmer_backend/services/session_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
 import '../../../routes/auth/refresh.dart' as route;
 import '../../helpers/test_context.dart';
 
-const _user = User(
-  uid: 'user-1',
-  firstName: 'Ada',
-  lastName: 'Lovelace',
-  email: 'ada@example.com',
-  photoUrl: '',
+const _pair = TokenPair(
+  accessToken: 'new-access',
+  refreshToken: 'new-refresh',
+  accessTokenExpiresIn: Duration(days: 1),
+  refreshTokenExpiresIn: Duration(days: 3),
 );
 
-Future<Response> _invoke(Request request, {User? found = _user}) {
-  final repository = MockUserRepository();
-  when(() => repository.findByUid(any())).thenAnswer((_) async => found);
+Future<Response> _invoke(
+  Request request, {
+  RefreshResult result = const RefreshSucceeded(_pair),
+  MockSessionService? sessions,
+}) {
+  final service = sessions ?? MockSessionService();
+  when(() => service.rotate(any())).thenAnswer((_) async => result);
+
   final context = TestContext(request: request)
-    ..provide<UserRepository>(repository);
+    ..provide<SessionService>(service);
   return Future.value(context.context).then(route.onRequest);
 }
 
 void main() {
-  final validToken = testTokens.generateRefreshToken('user-1');
-
   group('POST /auth/refresh', () {
     test('rejects every method except POST', () async {
       await expectMethodNotAllowed(_invoke, allowed: {'POST'});
@@ -53,87 +53,87 @@ void main() {
     // by accident.
     for (final key in ['refreshToken', 'refresh_token']) {
       test('accepts the "$key" spelling', () async {
+        final sessions = MockSessionService();
         final response = await _invoke(
-          jsonRequest('POST', body: {key: validToken}),
+          jsonRequest('POST', body: {key: 'presented'}),
+          sessions: sessions,
         );
+
         expect(response.statusCode, equals(200));
+        verify(() => sessions.rotate('presented')).called(1);
       });
     }
 
-    test('responds 401 for a garbage token', () async {
+    test('returns the rotated pair', () async {
       final response = await _invoke(
-        jsonRequest('POST', body: {'refreshToken': 'nonsense'}),
+        jsonRequest('POST', body: {'refreshToken': 'presented'}),
       );
-      expect(response.statusCode, equals(401));
-    });
-
-    // An access token must not be usable to mint new tokens.
-    test('responds 401 when given an access token', () async {
-      final response = await _invoke(
-        jsonRequest(
-          'POST',
-          body: {'refreshToken': testTokens.generateAccessToken('user-1')},
-        ),
-      );
-      expect(response.statusCode, equals(401));
-    });
-
-    test('responds 401 for an expired refresh token', () async {
-      const expired = TokenService(
-        secret: 'test-secret',
-        refreshTokenExpiresIn: Duration(seconds: -1),
-      );
-      final response = await _invoke(
-        jsonRequest(
-          'POST',
-          body: {'refreshToken': expired.generateRefreshToken('user-1')},
-        ),
-      );
-      expect(response.statusCode, equals(401));
-    });
-
-    test('responds 404 when the user no longer exists', () async {
-      final response = await _invoke(
-        jsonRequest('POST', body: {'refreshToken': validToken}),
-        found: null,
-      );
-      expect(response.statusCode, equals(404));
-    });
-
-    test('issues a fresh pair of working tokens', () async {
-      final response = await _invoke(
-        jsonRequest('POST', body: {'refreshToken': validToken}),
-      );
-      final json = await jsonBody(response) as Map<String, dynamic>;
 
       expect(response.statusCode, equals(200));
       expect(
-        testTokens.verifyAccessToken(json['access_token'] as String),
-        equals('user-1'),
-      );
-      expect(
-        testTokens.verifyRefreshToken(json['refresh_token'] as String),
-        equals('user-1'),
+        await jsonBody(response),
+        equals({
+          'access_token': 'new-access',
+          'access_token_expires_in': 86400,
+          'refresh_token': 'new-refresh',
+          'refresh_token_expires_in': 259200,
+        }),
       );
     });
 
     test('does not echo the user object', () async {
       final response = await _invoke(
-        jsonRequest('POST', body: {'refreshToken': validToken}),
+        jsonRequest('POST', body: {'refreshToken': 'presented'}),
       );
       final json = await jsonBody(response) as Map<String, dynamic>;
       expect(json.containsKey('user'), isFalse);
     });
 
-    // Documents current behaviour rather than endorsing it: without a
-    // persisted token store the presented token stays valid after rotation.
-    test('leaves the presented refresh token usable (no revocation yet)',
-        () async {
-      await _invoke(jsonRequest('POST', body: {'refreshToken': validToken}));
-      final second = await _invoke(
-        jsonRequest('POST', body: {'refreshToken': validToken}),
+    test('responds 401 for a rejected token', () async {
+      final response = await _invoke(
+        jsonRequest('POST', body: {'refreshToken': 'presented'}),
+        result: const RefreshRejected(),
       );
-      expect(second.statusCode, equals(200));
+
+      expect(response.statusCode, equals(401));
+      expect(
+        await jsonBody(response),
+        equals({'error': 'Invalid or expired refresh token'}),
+      );
+    });
+
+    test('responds 404 when the user is gone', () async {
+      final response = await _invoke(
+        jsonRequest('POST', body: {'refreshToken': 'presented'}),
+        result: const RefreshUserMissing(),
+      );
+      expect(response.statusCode, equals(404));
+    });
+
+    // A replayed token must not be answered differently from an ordinary bad
+    // one, or the endpoint confirms to an attacker that the token they hold
+    // was genuine.
+    test('answers reuse exactly like an ordinary rejection', () async {
+      final reuse = await _invoke(
+        jsonRequest('POST', body: {'refreshToken': 'presented'}),
+        result: const RefreshReuseDetected('family-1'),
+      );
+      final rejected = await _invoke(
+        jsonRequest('POST', body: {'refreshToken': 'presented'}),
+        result: const RefreshRejected(),
+      );
+
+      expect(reuse.statusCode, equals(rejected.statusCode));
+      expect(await jsonBody(reuse), equals(await jsonBody(rejected)));
+    });
+
+    test('does not leak the revoked family id', () async {
+      final response = await _invoke(
+        jsonRequest('POST', body: {'refreshToken': 'presented'}),
+        result: const RefreshReuseDetected('family-1'),
+      );
+
+      expect(await response.body(), isNot(contains('family-1')));
     });
   });
 }

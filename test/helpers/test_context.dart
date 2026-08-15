@@ -2,14 +2,19 @@ import 'dart:convert';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:delmer_backend/auth/authenticated_user.dart';
+import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
+import 'package:delmer_backend/auth/password_hasher.dart';
 import 'package:delmer_backend/auth/token_service.dart';
 import 'package:delmer_backend/repositories/category_repository.dart';
 import 'package:delmer_backend/repositories/order_repository.dart';
 import 'package:delmer_backend/repositories/product_repository.dart';
 import 'package:delmer_backend/repositories/restaurant_repository.dart';
 import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:delmer_backend/services/session_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
+
+import 'fakes.dart' show InMemoryRefreshTokenRepository, StubUserRepository;
 
 /// A mock [RequestContext].
 class MockRequestContext extends Mock implements RequestContext {}
@@ -29,8 +34,20 @@ class MockProductRepository extends Mock implements ProductRepository {}
 /// A mock [OrderRepository].
 class MockOrderRepository extends Mock implements OrderRepository {}
 
+/// A mock [PasswordHasher], for asserting on how a route uses it.
+class MockPasswordHasher extends Mock implements PasswordHasher {}
+
+/// A mock [SessionService].
+class MockSessionService extends Mock implements SessionService {}
+
 /// The [TokenService] used across route tests.
 const testTokens = TokenService(secret: 'test-secret');
+
+/// The [PasswordHasher] used across route tests.
+///
+/// Cost 4 is the bcrypt minimum. Production runs at 12; hashing at that cost
+/// in every auth test would add seconds to the suite for no extra coverage.
+final testHasher = BcryptPasswordHasher(rounds: 4);
 
 /// A [RequestContext] wired for a single route invocation.
 ///
@@ -43,7 +60,19 @@ class TestContext {
       request ?? Request.get(Uri.parse('http://localhost/')),
     );
     provide<TokenService>(testTokens);
+    provide<PasswordHasher>(testHasher);
+    provide<SessionService>(
+      SessionService(
+        tokens: testTokens,
+        refreshTokens: refreshTokens,
+        users: StubUserRepository(),
+      ),
+    );
   }
+
+  /// Records issued by the default [SessionService], open for inspection.
+  final InMemoryRefreshTokenRepository refreshTokens =
+      InMemoryRefreshTokenRepository();
 
   /// The underlying mock handed to `onRequest`.
   final MockRequestContext context = MockRequestContext();

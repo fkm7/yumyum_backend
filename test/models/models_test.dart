@@ -2,6 +2,7 @@ import 'package:delmer_backend/models/cart_item.dart';
 import 'package:delmer_backend/models/category.dart';
 import 'package:delmer_backend/models/order.dart';
 import 'package:delmer_backend/models/product.dart';
+import 'package:delmer_backend/models/refresh_token_record.dart';
 import 'package:delmer_backend/models/restaurant.dart';
 import 'package:delmer_backend/models/user.dart';
 import 'package:test/test.dart';
@@ -191,6 +192,66 @@ void main() {
           reason: '$value should not parse',
         );
       }
+    });
+  });
+
+  group('RefreshTokenRecord', () {
+    final issuedAt = DateTime.utc(2026, 8, 15, 12);
+    final expiresAt = DateTime.utc(2026, 8, 18, 12);
+    final row = {
+      'id': 'token-1',
+      'user_id': 'user-1',
+      'family_id': 'family-1',
+      'issued_at': issuedAt,
+      'expires_at': expiresAt,
+      'revoked_at': null,
+      'replaced_by': null,
+    };
+
+    test('reads a live token', () {
+      final record = RefreshTokenRecord.fromRow(row);
+
+      expect(record.id, equals('token-1'));
+      expect(record.userId, equals('user-1'));
+      expect(record.familyId, equals('family-1'));
+      expect(record.issuedAt, equals(issuedAt));
+      expect(record.expiresAt, equals(expiresAt));
+      expect(record.isRevoked, isFalse);
+      expect(record.replacedBy, isNull);
+    });
+
+    test('reads a rotated token', () {
+      final record = RefreshTokenRecord.fromRow({
+        ...row,
+        'revoked_at': DateTime.utc(2026, 8, 15, 13),
+        'replaced_by': 'token-2',
+      });
+
+      expect(record.isRevoked, isTrue);
+      expect(record.revokedAt, equals(DateTime.utc(2026, 8, 15, 13)));
+      expect(record.replacedBy, equals('token-2'));
+    });
+
+    test('is not expired before its expiry', () {
+      final record = RefreshTokenRecord.fromRow(row);
+      expect(
+        record.hasExpired(expiresAt.subtract(const Duration(seconds: 1))),
+        isFalse,
+      );
+    });
+
+    test('is expired after its expiry', () {
+      final record = RefreshTokenRecord.fromRow(row);
+      expect(
+        record.hasExpired(expiresAt.add(const Duration(seconds: 1))),
+        isTrue,
+      );
+    });
+
+    // The boundary is deliberate: a token is usable strictly before the
+    // instant it expires, so an exactly-on-expiry token is refused.
+    test('is expired exactly at its expiry', () {
+      expect(RefreshTokenRecord.fromRow(row).hasExpired(expiresAt), isTrue);
     });
   });
 

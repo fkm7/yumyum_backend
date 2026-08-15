@@ -1,11 +1,14 @@
 @Tags(['integration'])
 library;
 
+import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
 import 'package:delmer_backend/db/database_service.dart';
 import 'package:delmer_backend/models/order.dart';
+import 'package:delmer_backend/models/refresh_token_record.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_category_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_order_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_product_repository.dart';
+import 'package:delmer_backend/repositories/postgres/postgres_refresh_token_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_restaurant_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_user_repository.dart';
 import 'package:postgres/postgres.dart';
@@ -22,6 +25,7 @@ void main() {
   final products = PostgresProductRepository(database);
   final users = PostgresUserRepository(database);
   final orders = PostgresOrderRepository(database);
+  final refreshTokens = PostgresRefreshTokenRepository(database);
 
   var counter = 0;
   String uniqueEmail() => 'test-${DateTime.now().microsecondsSinceEpoch}'
@@ -30,6 +34,10 @@ void main() {
   tearDownAll(() async {
     final conn = await database.connection;
     await conn.execute("DELETE FROM orders WHERE id LIKE 'itest-%'");
+    await conn.execute(
+      'DELETE FROM refresh_tokens WHERE user_id IN '
+      "(SELECT uid FROM users WHERE email LIKE 'test-%@example.com')",
+    );
     await conn
         .execute("DELETE FROM users WHERE email LIKE 'test-%@example.com'");
     await conn.close();
@@ -213,6 +221,55 @@ void main() {
       expect(await users.findByEmail('nobody@example.com'), isNull);
       expect(await users.findByUid('no-such-uid'), isNull);
     });
+
+    test('updates the stored password digest', () async {
+      final email = uniqueEmail();
+      final created = await users.create(
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: email,
+        passwordHash: 'old-digest',
+      );
+
+      await users.updatePasswordHash(created!.uid, 'new-digest');
+
+      final found = await users.findByEmail(email);
+      expect(found!.passwordHash, equals('new-digest'));
+    });
+
+    test('updating an unknown uid is a no-op rather than an error', () async {
+      await expectLater(
+        users.updatePasswordHash('no-such-uid', 'digest'),
+        completes,
+      );
+    });
+
+    // The migration end to end: a row stored under the old scheme verifies,
+    // gets rewritten as bcrypt, and still verifies afterwards. bcrypt digests
+    // are 60 characters, so this also proves the column is wide enough.
+    test('migrates a legacy digest to bcrypt and back out again', () async {
+      final hasher = BcryptPasswordHasher(rounds: 4);
+      final email = uniqueEmail();
+      final created = await users.create(
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: email,
+        passwordHash: legacySha256Digest('hunter2'),
+      );
+
+      final legacy = await users.findByEmail(email);
+      expect(hasher.verify('hunter2', legacy!.passwordHash!), isTrue);
+      expect(hasher.needsRehash(legacy.passwordHash!), isTrue);
+
+      await users.updatePasswordHash(created!.uid, hasher.hash('hunter2'));
+
+      final upgraded = await users.findByEmail(email);
+      expect(upgraded!.passwordHash, startsWith(r'$2a$'));
+      expect(upgraded.passwordHash, hasLength(60));
+      expect(hasher.verify('hunter2', upgraded.passwordHash!), isTrue);
+      expect(hasher.verify('wrong', upgraded.passwordHash!), isFalse);
+      expect(hasher.needsRehash(upgraded.passwordHash!), isFalse);
+    });
   });
 
   group('OrderRepository', () {
@@ -336,6 +393,180 @@ void main() {
 
     test('returns null for an unknown order id', () async {
       expect(await orders.findById('no-such-order'), isNull);
+    });
+  });
+
+  group('RefreshTokenRepository', () {
+    late String userId;
+    final issuedAt = DateTime.utc(2026, 8, 15, 12);
+
+    setUpAll(() async {
+      final user = await users.create(
+        firstName: 'Token',
+        lastName: 'Owner',
+        email: uniqueEmail(),
+        passwordHash: 'digest',
+      );
+      userId = user!.uid;
+    });
+
+    RefreshTokenRecord record({
+      required String id,
+      String? familyId,
+      DateTime? expiresAt,
+    }) =>
+        RefreshTokenRecord(
+          id: id,
+          userId: userId,
+          familyId: familyId ?? 'family-$id',
+          issuedAt: issuedAt,
+          expiresAt: expiresAt ?? issuedAt.add(const Duration(days: 3)),
+        );
+
+    String uniqueId() =>
+        'itest-token-${DateTime.now().microsecondsSinceEpoch}-${counter++}';
+
+    test('round-trips an issued token', () async {
+      final id = uniqueId();
+      await refreshTokens.issue(record(id: id));
+
+      final found = await refreshTokens.findById(id);
+
+      expect(found, isNotNull);
+      expect(found!.userId, equals(userId));
+      expect(found.familyId, equals('family-$id'));
+      expect(found.isRevoked, isFalse);
+      expect(found.replacedBy, isNull);
+    });
+
+    // TIMESTAMPTZ must come back as a DateTime, or expiry comparison throws.
+    test('reads timestamps back as DateTimes', () async {
+      final id = uniqueId();
+      await refreshTokens.issue(record(id: id));
+
+      final found = await refreshTokens.findById(id);
+
+      expect(found!.issuedAt, isA<DateTime>());
+      expect(found.issuedAt.toUtc(), equals(issuedAt));
+      expect(
+        found.expiresAt.toUtc(),
+        equals(issuedAt.add(const Duration(days: 3))),
+      );
+    });
+
+    test('returns null for an unknown id', () async {
+      expect(await refreshTokens.findById('no-such-token'), isNull);
+    });
+
+    test('revokes a token and records its successor', () async {
+      final id = uniqueId();
+      final successor = uniqueId();
+      await refreshTokens.issue(record(id: id));
+
+      final revokedAt = DateTime.utc(2026, 8, 15, 13);
+      await refreshTokens.revoke(
+        id,
+        revokedAt: revokedAt,
+        replacedBy: successor,
+      );
+
+      final found = await refreshTokens.findById(id);
+      expect(found!.isRevoked, isTrue);
+      expect(found.revokedAt!.toUtc(), equals(revokedAt));
+      expect(found.replacedBy, equals(successor));
+    });
+
+    // Revoking twice must not move the original timestamp forward.
+    test('keeps the first revocation timestamp', () async {
+      final id = uniqueId();
+      await refreshTokens.issue(record(id: id));
+
+      final first = DateTime.utc(2026, 8, 15, 13);
+      await refreshTokens.revoke(id, revokedAt: first);
+      await refreshTokens.revoke(id, revokedAt: DateTime.utc(2026, 8, 15, 14));
+
+      final found = await refreshTokens.findById(id);
+      expect(found!.revokedAt!.toUtc(), equals(first));
+    });
+
+    test('revoking an unknown token is a no-op', () async {
+      await expectLater(
+        refreshTokens.revoke('no-such-token', revokedAt: issuedAt),
+        completes,
+      );
+    });
+
+    test('revokes an entire family in one statement', () async {
+      final family = 'itest-family-${DateTime.now().microsecondsSinceEpoch}';
+      final ids = [uniqueId(), uniqueId(), uniqueId()];
+      for (final id in ids) {
+        await refreshTokens.issue(record(id: id, familyId: family));
+      }
+
+      await refreshTokens.revokeFamily(
+        family,
+        revokedAt: DateTime.utc(2026, 8, 15, 13),
+      );
+
+      for (final id in ids) {
+        expect((await refreshTokens.findById(id))!.isRevoked, isTrue);
+      }
+    });
+
+    test('leaves other families untouched', () async {
+      final mine = uniqueId();
+      final theirs = uniqueId();
+      await refreshTokens.issue(record(id: mine, familyId: 'family-a'));
+      await refreshTokens.issue(record(id: theirs, familyId: 'family-b'));
+
+      await refreshTokens.revokeFamily('family-a', revokedAt: issuedAt);
+
+      expect((await refreshTokens.findById(theirs))!.isRevoked, isFalse);
+    });
+
+    test('prunes expired tokens and leaves live ones', () async {
+      final expired = uniqueId();
+      final live = uniqueId();
+      await refreshTokens.issue(
+        record(id: expired, expiresAt: DateTime.utc(2020)),
+      );
+      await refreshTokens.issue(
+        record(id: live, expiresAt: DateTime.utc(2099)),
+      );
+
+      final removed = await refreshTokens.deleteExpired(DateTime.utc(2026));
+
+      expect(removed, greaterThanOrEqualTo(1));
+      expect(await refreshTokens.findById(expired), isNull);
+      expect(await refreshTokens.findById(live), isNotNull);
+    });
+
+    // ON DELETE CASCADE: removing a user must not leave orphan tokens behind.
+    test("drops a user's tokens when the user is deleted", () async {
+      final doomed = await users.create(
+        firstName: 'Soon',
+        lastName: 'Gone',
+        email: uniqueEmail(),
+        passwordHash: 'digest',
+      );
+      final id = uniqueId();
+      await refreshTokens.issue(
+        RefreshTokenRecord(
+          id: id,
+          userId: doomed!.uid,
+          familyId: 'family-doomed',
+          issuedAt: issuedAt,
+          expiresAt: issuedAt.add(const Duration(days: 3)),
+        ),
+      );
+
+      final conn = await database.connection;
+      await conn.execute(
+        Sql.named('DELETE FROM users WHERE uid = @uid'),
+        parameters: {'uid': doomed.uid},
+      );
+
+      expect(await refreshTokens.findById(id), isNull);
     });
   });
 
