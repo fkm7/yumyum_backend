@@ -84,10 +84,41 @@ Two operational notes:
   prunes them and needs to be run periodically, or the table grows without
   bound.
 
+## Running
+
+```sh
+docker compose up -d          # database
+dart_frog dev                 # development, hot reload
+
+dart_frog build               # production
+dart build/bin/server.dart
+```
+
+`main.dart` at the project root is a custom Dart Frog entrypoint, and it is
+load-bearing: without it the generated server binds `InternetAddress.anyIPv6`
+(`::`) unconditionally, which fails outright on a host with IPv6 disabled —
+the default in many container runtimes:
+
+```
+SocketException: Failed to create server socket
+(OS Error: Address family not supported by protocol, errno = 97), address = ::
+```
+
+The process never starts listening. The entrypoint makes the bind address come
+from `HOST` instead.
+
+Note there is no TLS here. iOS App Transport Security and Android's default
+cleartext policy both refuse plain HTTP, so a mobile client needs TLS
+terminated by a proxy in front of this server. Nor is there any CORS handling;
+native mobile clients do not need it, but a browser-based client (Flutter web)
+would be blocked.
+
 ## Configuration
 
 | Variable | Default | Notes |
 | --- | --- | --- |
+| `HOST` | `0.0.0.0` | Bind address. The default accepts connections from other machines, so a device on the same network can reach the server; use `127.0.0.1` to restrict to loopback, or `::` for IPv6. |
+| `PORT` | `8080` | |
 | `JWT_SECRET` | development fallback | Must be set in production; a warning is logged when it is not. |
 | `BCRYPT_ROUNDS` | `12` | bcrypt cost factor. Logarithmic — each increment doubles the work. Raising it migrates existing credentials on their next login. |
 | `DB_HOST` / `DB_PORT` | `localhost` / `5432` | |
