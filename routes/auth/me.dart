@@ -22,5 +22,9 @@ FutureOr<Response> onRequest(RequestContext context) async {
     return Response.json(statusCode: 404, body: {'error': 'User not found'});
   }
 
-  return Response.json(body: user.toJson());
+  return Response.json(
+    body: {
+      'user': user.toJson(),
+    },
+  );
 }
