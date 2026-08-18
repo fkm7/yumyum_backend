@@ -1,0 +1,12 @@
+.dart_tool/
+.dart_frog/
+build/
+coverage/
+test/
+.git/
+.github/
+.vscode/
+docker-compose.yaml
+README.md
+agents.md
+claude.md
