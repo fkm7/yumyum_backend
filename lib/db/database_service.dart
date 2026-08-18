@@ -14,8 +14,8 @@ class DatabaseService {
     Endpoint(
       host: Platform.environment['DB_HOST'] ?? 'localhost',
       port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
-      database: Platform.environment['DB_NAME'] ?? 'yumyum',
-      username: Platform.environment['DB_USER'] ?? 'felix',
+      database: Platform.environment['DB_NAME'] ?? 'delmer',
+      username: Platform.environment['DB_USER'] ?? 'farrukh',
       password: Platform.environment['DB_PASS'] ?? '1997',
     ),
     settings: const ConnectionSettings(sslMode: SslMode.disable),
