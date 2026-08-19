@@ -8,6 +8,9 @@ abstract class RestaurantRepository {
   /// Returns the restaurants serving the given cuisine, ordered by id.
   Future<List<Restaurant>> findByCuisine(int cuisineId);
 
+  /// Returns the restaurants in the given restaurant category, ordered by id.
+  Future<List<Restaurant>> findByCategory(int categoryId);
+
   /// Returns the restaurant with the given id, or null when absent.
   Future<Restaurant?> findById(int id);
 

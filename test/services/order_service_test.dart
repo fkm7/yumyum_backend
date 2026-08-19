@@ -13,6 +13,7 @@ Restaurant _restaurant({int id = 1, bool isOpen = true}) => Restaurant(
       address: const {'city': 'Tashkent'},
       image: null,
       cuisine: 1,
+      category: 1,
       startTime: '09:00',
       endTime: '23:00',
       description: null,

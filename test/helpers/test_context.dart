@@ -10,6 +10,7 @@ import 'package:delmer_backend/repositories/cuisine_repository.dart';
 import 'package:delmer_backend/repositories/favorite_repository.dart';
 import 'package:delmer_backend/repositories/order_repository.dart';
 import 'package:delmer_backend/repositories/product_repository.dart';
+import 'package:delmer_backend/repositories/restaurant_category_repository.dart';
 import 'package:delmer_backend/repositories/restaurant_repository.dart';
 import 'package:delmer_backend/repositories/user_repository.dart';
 import 'package:delmer_backend/services/session_service.dart';
@@ -32,6 +33,10 @@ class MockCuisineRepository extends Mock implements CuisineRepository {}
 
 /// A mock [RestaurantRepository].
 class MockRestaurantRepository extends Mock implements RestaurantRepository {}
+
+/// A mock [RestaurantCategoryRepository].
+class MockRestaurantCategoryRepository extends Mock
+    implements RestaurantCategoryRepository {}
 
 /// A mock [ProductRepository].
 class MockProductRepository extends Mock implements ProductRepository {}

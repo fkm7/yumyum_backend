@@ -8,10 +8,18 @@ CREATE TABLE IF NOT EXISTS categories (
   icon TEXT
 );
 
--- Restaurant-facing categories: the cuisine a restaurant serves (Italian,
--- Japanese, Ukrainian, ...). Distinct from `categories`, which classifies
--- products instead.
+-- The cuisine a restaurant serves (American, Italian, Japanese, ...).
 CREATE TABLE IF NOT EXISTS cuisines (
+  id INTEGER PRIMARY KEY,
+  title_en TEXT NOT NULL,
+  title_ru TEXT NOT NULL,
+  title_uz TEXT NOT NULL,
+  icon TEXT
+);
+
+-- The kind of food a restaurant is known for (Burgers, Pizza, Sushi, ...).
+-- Distinct from `cuisines` (nationality) and `categories` (a product's course).
+CREATE TABLE IF NOT EXISTS restaurant_categories (
   id INTEGER PRIMARY KEY,
   title_en TEXT NOT NULL,
   title_ru TEXT NOT NULL,
@@ -28,6 +36,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   address JSONB NOT NULL,
   image TEXT,
   cuisine INTEGER NOT NULL REFERENCES cuisines(id),
+  category INTEGER NOT NULL REFERENCES restaurant_categories(id),
   start_time TEXT,
   end_time TEXT,
   description TEXT,
@@ -140,51 +149,61 @@ INSERT INTO cuisines (id, title_en, title_ru, title_uz, icon) VALUES
   (7, 'Korean', 'Корейская', 'Koreys oshxonasi', 'https://picsum.photos/seed/korean/200/200')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO restaurant_categories (id, title_en, title_ru, title_uz, icon) VALUES
+  (0, 'All', 'Все', 'Barchasi', NULL),
+  (1, 'Burgers', 'Бургеры', 'Burgerlar', 'https://picsum.photos/seed/burgers/200/200'),
+  (2, 'Pizza', 'Пицца', 'Pizza', 'https://picsum.photos/seed/pizza/200/200'),
+  (3, 'Sushi', 'Суши', 'Sushi', 'https://picsum.photos/seed/sushi/200/200'),
+  (4, 'Salads', 'Салаты', 'Salatlar', 'https://picsum.photos/seed/salads/200/200'),
+  (5, 'Pasta', 'Паста', 'Pasta', 'https://picsum.photos/seed/pasta/200/200'),
+  (6, 'Grill', 'Гриль', 'Grill', 'https://picsum.photos/seed/grill/200/200')
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO restaurants (
-  id, name, is_open, rating, logo, address, image, cuisine, start_time,
-  end_time, description, phone_number, delivery_cost, min_delivery_time,
-  max_delivery_time, free_delivery_from, product_categories
+  id, name, is_open, rating, logo, address, image, cuisine, category,
+  start_time, end_time, description, phone_number, delivery_cost,
+  min_delivery_time, max_delivery_time, free_delivery_from, product_categories
 ) VALUES
   (
     1, 'Burger House', true, 4.5, 'https://picsum.photos/seed/bh_logo/100/100',
     '{"latitude":41.2995,"longitude":69.2401,"type":"other","street":"123 Amir Temur Ave","city":"Tashkent","country":"Uzbekistan","isDefault":false}',
-    'https://picsum.photos/seed/burgerhouse/600/300', 1, '09:00', '23:00',
+    'https://picsum.photos/seed/burgerhouse/600/300', 1, 1, '09:00', '23:00',
     'Best smash burgers in town', '+998901234567', 5000.0, 20, 40, 50000.0, '[2]'
   ),
   (
     2, 'Pizza Palace', true, 4.2, 'https://picsum.photos/seed/pp_logo/100/100',
     '{"latitude":41.3111,"longitude":69.2797,"type":"other","street":"456 Navoi St","city":"Tashkent","country":"Uzbekistan","isDefault":false}',
-    'https://picsum.photos/seed/pizzapalace/600/300', 2, '10:00', '22:00',
+    'https://picsum.photos/seed/pizzapalace/600/300', 2, 2, '10:00', '22:00',
     'Authentic Italian pizza baked in a wood oven', '+998907654321', 3000.0, 30, 50, 80000.0, '[2]'
   ),
   (
     3, 'Sushi World', false, 4.8, 'https://picsum.photos/seed/sw_logo/100/100',
     '{"latitude":41.2887,"longitude":69.2126,"type":"other","street":"789 Yunusabad Blvd","city":"Tashkent","country":"Uzbekistan","isDefault":false}',
-    'https://picsum.photos/seed/sushiworld/600/300', 3, '11:00', '21:00',
+    'https://picsum.photos/seed/sushiworld/600/300', 3, 3, '11:00', '21:00',
     'Premium Japanese cuisine made fresh daily', '+998909876543', 7000.0, 40, 60, 100000.0, '[1, 2]'
   ),
   (
     4, 'Grill Master', true, 4.6, 'https://picsum.photos/seed/gm_logo/100/100',
     '{"latitude":41.3275,"longitude":69.2817,"type":"other","street":"12 Mustaqillik Ave","city":"Tashkent","country":"Uzbekistan","isDefault":false}',
-    'https://picsum.photos/seed/grillmaster/600/300', 1, '10:00', '23:00',
+    'https://picsum.photos/seed/grillmaster/600/300', 1, 6, '10:00', '23:00',
     'Flame-grilled burgers and steaks', '+998901112233', 4000.0, 25, 45, 60000.0, '[2]'
   ),
   (
     5, 'Napoli Pizzeria', true, 4.3, 'https://picsum.photos/seed/np_logo/100/100',
     '{"latitude":41.3054,"longitude":69.2437,"type":"other","street":"88 Buyuk Ipak Yoli","city":"Tashkent","country":"Uzbekistan","isDefault":false}',
-    'https://picsum.photos/seed/napolipizzeria/600/300', 2, '11:00', '23:00',
+    'https://picsum.photos/seed/napolipizzeria/600/300', 2, 2, '11:00', '23:00',
     'Wood-fired Neapolitan-style pizza', '+998904445566', 3500.0, 30, 55, 70000.0, '[2]'
   ),
   (
     6, 'Tokyo Sushi Bar', true, NULL, 'https://picsum.photos/seed/tsb_logo/100/100',
     '{"latitude":41.3167,"longitude":69.2500,"type":"other","street":"5 Shota Rustaveli St","city":"Tashkent","country":"Uzbekistan","isDefault":false}',
-    'https://picsum.photos/seed/tokyosushibar/600/300', 3, '11:00', '22:00',
+    'https://picsum.photos/seed/tokyosushibar/600/300', 3, 3, '11:00', '22:00',
     'Newly opened — menu coming soon', '+998907778899', 6000.0, 35, 60, 90000.0, '[]'
   ),
   (
     7, 'Cheesy Slice', true, NULL, 'https://picsum.photos/seed/cs_logo/100/100',
     '{"latitude":41.2833,"longitude":69.2167,"type":"other","street":"200 Chilanzar St","city":"Tashkent","country":"Uzbekistan","isDefault":false}',
-    'https://picsum.photos/seed/cheesyslice/600/300', 2, '12:00', '22:00',
+    'https://picsum.photos/seed/cheesyslice/600/300', 2, 2, '12:00', '22:00',
     'Newly opened — menu coming soon', '+998901239876', 4500.0, 25, 50, 60000.0, '[]'
   )
 ON CONFLICT (id) DO NOTHING;

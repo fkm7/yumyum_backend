@@ -10,6 +10,7 @@ class Restaurant {
     required this.address,
     required this.image,
     required this.cuisine,
+    required this.category,
     required this.startTime,
     required this.endTime,
     required this.description,
@@ -36,6 +37,7 @@ class Restaurant {
       address: row['address'] as Map<String, dynamic>,
       image: row['image'] as String?,
       cuisine: row['cuisine'] as int,
+      category: row['category'] as int,
       startTime: row['start_time'] as String?,
       endTime: row['end_time'] as String?,
       description: row['description'] as String?,
@@ -71,6 +73,10 @@ class Restaurant {
 
   /// Identifier of the cuisine this restaurant serves.
   final int cuisine;
+
+  /// Identifier of the kind of food this restaurant is known for (Burgers,
+  /// Pizza, Sushi, ...), as distinct from [cuisine].
+  final int category;
 
   /// Opening time, as `HH:mm`.
   final String? startTime;
@@ -109,6 +115,7 @@ class Restaurant {
         'address': address,
         'image': image,
         'cuisine': cuisine,
+        'category': category,
         'start_time': startTime,
         'end_time': endTime,
         'description': description,
