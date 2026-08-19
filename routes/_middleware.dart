@@ -5,9 +5,11 @@ import 'package:delmer_backend/auth/token_service.dart';
 import 'package:delmer_backend/db/database_service.dart';
 import 'package:delmer_backend/middleware/error_handler.dart';
 import 'package:delmer_backend/repositories/category_repository.dart';
+import 'package:delmer_backend/repositories/cuisine_repository.dart';
 import 'package:delmer_backend/repositories/favorite_repository.dart';
 import 'package:delmer_backend/repositories/order_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_category_repository.dart';
+import 'package:delmer_backend/repositories/postgres/postgres_cuisine_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_favorite_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_order_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_product_repository.dart';
@@ -28,6 +30,7 @@ final _tokens = TokenService.fromEnvironment();
 final _passwordHasher = BcryptPasswordHasher.fromEnvironment();
 final _users = PostgresUserRepository(_database);
 final _categories = PostgresCategoryRepository(_database);
+final _cuisines = PostgresCuisineRepository(_database);
 final _restaurants = PostgresRestaurantRepository(_database);
 final _products = PostgresProductRepository(_database);
 final _orders = PostgresOrderRepository(_database);
@@ -48,6 +51,7 @@ Handler middleware(Handler handler) {
       .use(provider<PasswordHasher>((_) => _passwordHasher))
       .use(provider<UserRepository>((_) => _users))
       .use(provider<CategoryRepository>((_) => _categories))
+      .use(provider<CuisineRepository>((_) => _cuisines))
       .use(provider<RestaurantRepository>((_) => _restaurants))
       .use(provider<ProductRepository>((_) => _products))
       .use(provider<OrderRepository>((_) => _orders))

@@ -4,7 +4,7 @@ import 'package:delmer_backend/repositories/restaurant_repository.dart';
 import 'package:postgres/postgres.dart';
 
 const _columns = '''
-  id, name, is_open, rating, logo, address, image, category, start_time,
+  id, name, is_open, rating, logo, address, image, cuisine, start_time,
   end_time, description, phone_number, delivery_cost, min_delivery_time,
   max_delivery_time, free_delivery_from, product_categories
 ''';
@@ -27,14 +27,14 @@ class PostgresRestaurantRepository implements RestaurantRepository {
   }
 
   @override
-  Future<List<Restaurant>> findByCategory(int categoryId) async {
+  Future<List<Restaurant>> findByCuisine(int cuisineId) async {
     final conn = await database.connection;
     final result = await conn.execute(
       Sql.named(
-        'SELECT $_columns FROM restaurants WHERE category = @category '
+        'SELECT $_columns FROM restaurants WHERE cuisine = @cuisine '
         'ORDER BY id',
       ),
-      parameters: {'category': categoryId},
+      parameters: {'cuisine': cuisineId},
     );
     return _map(result);
   }

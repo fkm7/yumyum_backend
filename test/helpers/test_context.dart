@@ -6,6 +6,7 @@ import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
 import 'package:delmer_backend/auth/password_hasher.dart';
 import 'package:delmer_backend/auth/token_service.dart';
 import 'package:delmer_backend/repositories/category_repository.dart';
+import 'package:delmer_backend/repositories/cuisine_repository.dart';
 import 'package:delmer_backend/repositories/favorite_repository.dart';
 import 'package:delmer_backend/repositories/order_repository.dart';
 import 'package:delmer_backend/repositories/product_repository.dart';
@@ -25,6 +26,9 @@ class MockUserRepository extends Mock implements UserRepository {}
 
 /// A mock [CategoryRepository].
 class MockCategoryRepository extends Mock implements CategoryRepository {}
+
+/// A mock [CuisineRepository].
+class MockCuisineRepository extends Mock implements CuisineRepository {}
 
 /// A mock [RestaurantRepository].
 class MockRestaurantRepository extends Mock implements RestaurantRepository {}

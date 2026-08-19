@@ -7,6 +7,7 @@ import 'package:delmer_backend/models/order.dart';
 import 'package:delmer_backend/models/refresh_token_record.dart';
 import 'package:delmer_backend/repositories/favorite_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_category_repository.dart';
+import 'package:delmer_backend/repositories/postgres/postgres_cuisine_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_favorite_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_order_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_product_repository.dart';
@@ -23,6 +24,7 @@ import 'package:test/test.dart';
 void main() {
   final database = DatabaseService.instance;
   final categories = PostgresCategoryRepository(database);
+  final cuisines = PostgresCuisineRepository(database);
   final restaurants = PostgresRestaurantRepository(database);
   final products = PostgresProductRepository(database);
   final users = PostgresUserRepository(database);
@@ -55,7 +57,17 @@ void main() {
       final all = await categories.findAll();
 
       expect(all, isNotEmpty);
-      expect(all.map((c) => c.titleEn), contains('Burgers'));
+      expect(all.map((c) => c.titleEn), contains('Second course'));
+      expect(all.first.id, isA<int>());
+    });
+  });
+
+  group('CuisineRepository', () {
+    test('reads the seeded cuisines', () async {
+      final all = await cuisines.findAll();
+
+      expect(all, isNotEmpty);
+      expect(all.map((c) => c.titleEn), contains('Italian'));
       expect(all.first.id, isA<int>());
     });
   });
@@ -92,15 +104,15 @@ void main() {
       expect(await restaurants.findById(999999), isNull);
     });
 
-    test('filters by category', () async {
-      final filtered = await restaurants.findByCategory(2);
+    test('filters by cuisine', () async {
+      final filtered = await restaurants.findByCuisine(2);
 
       expect(filtered, isNotEmpty);
-      expect(filtered.every((r) => r.category == 2), isTrue);
+      expect(filtered.every((r) => r.cuisine == 2), isTrue);
     });
 
-    test('returns an empty list for a category with no restaurants', () async {
-      expect(await restaurants.findByCategory(999999), isEmpty);
+    test('returns an empty list for a cuisine with no restaurants', () async {
+      expect(await restaurants.findByCuisine(999999), isEmpty);
     });
 
     // findByIds uses `= ANY(@ids)` with a typed int array, which only a real

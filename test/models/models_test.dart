@@ -125,7 +125,7 @@ void main() {
       'logo': null,
       'address': {'city': 'Tashkent'},
       'image': null,
-      'category': 1,
+      'cuisine': 1,
       'start_time': '09:00',
       'end_time': '23:00',
       'description': null,

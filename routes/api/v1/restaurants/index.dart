@@ -9,24 +9,24 @@ FutureOr<Response> onRequest(RequestContext context) async {
   }
 
   final repository = context.read<RestaurantRepository>();
-  final rawCategory = context.request.uri.queryParameters['category'];
+  final rawCuisine = context.request.uri.queryParameters['cuisine'];
 
-  if (rawCategory == null) {
+  if (rawCuisine == null) {
     final all = await repository.findAll();
     return Response.json(body: all.map((r) => r.toJson()).toList());
   }
 
-  // `?category=abc` used to parse to null and be passed to the query as NULL,
+  // `?cuisine=abc` used to parse to null and be passed to the query as NULL,
   // which matched nothing and returned an empty 200 rather than reporting the
   // bad input.
-  final categoryId = int.tryParse(rawCategory);
-  if (categoryId == null) {
+  final cuisineId = int.tryParse(rawCuisine);
+  if (cuisineId == null) {
     return Response.json(
       statusCode: 400,
-      body: {'error': 'category must be an integer'},
+      body: {'error': 'cuisine must be an integer'},
     );
   }
 
-  final filtered = await repository.findByCategory(categoryId);
+  final filtered = await repository.findByCuisine(cuisineId);
   return Response.json(body: filtered.map((r) => r.toJson()).toList());
 }

@@ -9,7 +9,7 @@ class Restaurant {
     required this.logo,
     required this.address,
     required this.image,
-    required this.category,
+    required this.cuisine,
     required this.startTime,
     required this.endTime,
     required this.description,
@@ -35,7 +35,7 @@ class Restaurant {
       logo: row['logo'] as String?,
       address: row['address'] as Map<String, dynamic>,
       image: row['image'] as String?,
-      category: row['category'] as int,
+      cuisine: row['cuisine'] as int,
       startTime: row['start_time'] as String?,
       endTime: row['end_time'] as String?,
       description: row['description'] as String?,
@@ -69,8 +69,8 @@ class Restaurant {
   /// URL of the restaurant cover image.
   final String? image;
 
-  /// Identifier of the category this restaurant belongs to.
-  final int category;
+  /// Identifier of the cuisine this restaurant serves.
+  final int cuisine;
 
   /// Opening time, as `HH:mm`.
   final String? startTime;
@@ -108,7 +108,7 @@ class Restaurant {
         'logo': logo,
         'address': address,
         'image': image,
-        'category': category,
+        'cuisine': cuisine,
         'start_time': startTime,
         'end_time': endTime,
         'description': description,

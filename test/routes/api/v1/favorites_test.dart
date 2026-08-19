@@ -25,7 +25,7 @@ const _restaurant = Restaurant(
   logo: null,
   address: {'city': 'Tashkent'},
   image: null,
-  category: 1,
+  cuisine: 1,
   startTime: '09:00',
   endTime: '23:00',
   description: null,
