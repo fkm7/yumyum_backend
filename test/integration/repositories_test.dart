@@ -5,7 +5,9 @@ import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
 import 'package:delmer_backend/db/database_service.dart';
 import 'package:delmer_backend/models/order.dart';
 import 'package:delmer_backend/models/refresh_token_record.dart';
+import 'package:delmer_backend/repositories/favorite_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_category_repository.dart';
+import 'package:delmer_backend/repositories/postgres/postgres_favorite_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_order_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_product_repository.dart';
 import 'package:delmer_backend/repositories/postgres/postgres_refresh_token_repository.dart';
@@ -25,6 +27,7 @@ void main() {
   final products = PostgresProductRepository(database);
   final users = PostgresUserRepository(database);
   final orders = PostgresOrderRepository(database);
+  final favorites = PostgresFavoriteRepository(database);
   final refreshTokens = PostgresRefreshTokenRepository(database);
 
   var counter = 0;
@@ -36,6 +39,10 @@ void main() {
     await conn.execute("DELETE FROM orders WHERE id LIKE 'itest-%'");
     await conn.execute(
       'DELETE FROM refresh_tokens WHERE user_id IN '
+      "(SELECT uid FROM users WHERE email LIKE 'test-%@example.com')",
+    );
+    await conn.execute(
+      'DELETE FROM favorites WHERE user_id IN '
       "(SELECT uid FROM users WHERE email LIKE 'test-%@example.com')",
     );
     await conn
@@ -94,6 +101,22 @@ void main() {
 
     test('returns an empty list for a category with no restaurants', () async {
       expect(await restaurants.findByCategory(999999), isEmpty);
+    });
+
+    // findByIds uses `= ANY(@ids)` with a typed int array, which only a real
+    // server can validate.
+    test('finds several restaurants in one round trip', () async {
+      final found = await restaurants.findByIds([1, 2, 3]);
+      expect(found.map((r) => r.id).toSet(), equals({1, 2, 3}));
+    });
+
+    test('silently omits ids that do not exist', () async {
+      final found = await restaurants.findByIds([1, 999999]);
+      expect(found.map((r) => r.id), equals([1]));
+    });
+
+    test('returns an empty list for no ids without querying', () async {
+      expect(await restaurants.findByIds([]), isEmpty);
     });
   });
 
@@ -393,6 +416,100 @@ void main() {
 
     test('returns null for an unknown order id', () async {
       expect(await orders.findById('no-such-order'), isNull);
+    });
+  });
+
+  group('FavoriteRepository', () {
+    late String userId;
+
+    setUpAll(() async {
+      final user = await users.create(
+        firstName: 'Favorite',
+        lastName: 'Owner',
+        email: uniqueEmail(),
+        passwordHash: 'digest',
+      );
+      userId = user!.uid;
+    });
+
+    test('adds and lists a favorite', () async {
+      await favorites.add(userId, FavoriteType.restaurant, 1);
+      expect(
+        await favorites.findIds(userId, FavoriteType.restaurant),
+        contains(1),
+      );
+    });
+
+    test('adding the same favorite twice is a no-op', () async {
+      await favorites.add(userId, FavoriteType.restaurant, 2);
+      await favorites.add(userId, FavoriteType.restaurant, 2);
+
+      final ids = await favorites.findIds(userId, FavoriteType.restaurant);
+      expect(ids.where((id) => id == 2), hasLength(1));
+    });
+
+    test('keeps restaurant and product favorites separate', () async {
+      await favorites.add(userId, FavoriteType.restaurant, 3);
+      await favorites.add(userId, FavoriteType.product, 3);
+
+      expect(
+        await favorites.findIds(userId, FavoriteType.restaurant),
+        contains(3),
+      );
+      expect(
+        await favorites.findIds(userId, FavoriteType.product),
+        contains(3),
+      );
+    });
+
+    test('removes a favorite', () async {
+      await favorites.add(userId, FavoriteType.product, 4);
+      await favorites.remove(userId, FavoriteType.product, 4);
+
+      expect(
+        await favorites.findIds(userId, FavoriteType.product),
+        isNot(contains(4)),
+      );
+    });
+
+    test('removing an unfavorited item is a no-op', () async {
+      await expectLater(
+        favorites.remove(userId, FavoriteType.product, 999999),
+        completes,
+      );
+    });
+
+    test('lists most recently favorited first', () async {
+      final other = (await users.create(
+        firstName: 'Recency',
+        lastName: 'Owner',
+        email: uniqueEmail(),
+        passwordHash: 'digest',
+      ))!
+          .uid;
+
+      await favorites.add(other, FavoriteType.restaurant, 4);
+      await favorites.add(other, FavoriteType.restaurant, 5);
+
+      final ids = await favorites.findIds(other, FavoriteType.restaurant);
+      expect(ids, equals([5, 4]));
+    });
+
+    test("does not leak another user's favorites", () async {
+      final other = (await users.create(
+        firstName: 'Someone',
+        lastName: 'Else',
+        email: uniqueEmail(),
+        passwordHash: 'digest',
+      ))!
+          .uid;
+
+      await favorites.add(other, FavoriteType.restaurant, 6);
+
+      expect(
+        await favorites.findIds(userId, FavoriteType.restaurant),
+        isNot(contains(6)),
+      );
     });
   });
 

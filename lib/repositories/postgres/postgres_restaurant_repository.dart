@@ -50,6 +50,17 @@ class PostgresRestaurantRepository implements RestaurantRepository {
     return Restaurant.fromRow(result.first.toColumnMap());
   }
 
+  @override
+  Future<List<Restaurant>> findByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final conn = await database.connection;
+    final result = await conn.execute(
+      Sql.named('SELECT $_columns FROM restaurants WHERE id = ANY(@ids)'),
+      parameters: {'ids': TypedValue(Type.integerArray, ids)},
+    );
+    return _map(result);
+  }
+
   List<Restaurant> _map(Result result) =>
       result.map((row) => Restaurant.fromRow(row.toColumnMap())).toList();
 }
