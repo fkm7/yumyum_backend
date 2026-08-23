@@ -12,7 +12,7 @@ class DatabaseService {
   /// The PostgreSQL connection instance.
   late final Future<Connection> connection = Connection.open(
     Endpoint(
-      host: Platform.environment['DB_HOST'] ?? 'localhost',
+      host: Platform.environment['DATABASE_URL'] ?? 'localhost',
       port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
       database: Platform.environment['DB_NAME'] ?? 'delmer',
       username: Platform.environment['DB_USER'] ?? 'farrukh',
