@@ -1,6 +1,9 @@
 import 'package:dart_frog/dart_frog.dart';
+import 'package:delmer_backend/models/category.dart';
+import 'package:delmer_backend/models/cuisine.dart';
 import 'package:delmer_backend/models/product.dart';
 import 'package:delmer_backend/models/restaurant.dart';
+import 'package:delmer_backend/models/restaurant_category.dart';
 import 'package:delmer_backend/repositories/favorite_repository.dart';
 import 'package:delmer_backend/repositories/product_repository.dart';
 import 'package:delmer_backend/repositories/restaurant_repository.dart';
@@ -17,6 +20,30 @@ import '../../../../routes/api/v1/favorites/restaurants/index.dart'
     as favorite_restaurants;
 import '../../../helpers/test_context.dart';
 
+const _category = Category(
+  id: 1,
+  titleEn: 'Burgers',
+  titleRu: 'Бургеры',
+  titleUz: 'Burgerlar',
+  icon: null,
+);
+
+const _cuisine = Cuisine(
+  id: 1,
+  titleEn: 'American',
+  titleRu: 'Американская',
+  titleUz: 'Amerika oshxonasi',
+  icon: null,
+);
+
+const _restaurantCategory = RestaurantCategory(
+  id: 1,
+  titleEn: 'Burgers',
+  titleRu: 'Бургеры',
+  titleUz: 'Burgerlar',
+  icon: null,
+);
+
 const _restaurant = Restaurant(
   id: 1,
   name: 'Burger House',
@@ -25,8 +52,8 @@ const _restaurant = Restaurant(
   logo: null,
   address: {'city': 'Tashkent'},
   image: null,
-  cuisine: 1,
-  category: 1,
+  cuisine: _cuisine,
+  category: _restaurantCategory,
   startTime: '09:00',
   endTime: '23:00',
   description: null,
@@ -35,13 +62,13 @@ const _restaurant = Restaurant(
   minDeliveryTime: 20,
   maxDeliveryTime: 40,
   freeDeliveryFrom: 50000,
-  productCategories: [1],
+  productCategories: [_category],
 );
 
 const _product = Product(
   id: 1,
   restaurantId: 1,
-  category: 1,
+  category: _category,
   price: 25000,
   status: 'available',
   titleEn: 'Classic Burger',
@@ -49,6 +76,7 @@ const _product = Product(
   titleUz: null,
   image: null,
   description: null,
+  unit: null,
 );
 
 void main() {

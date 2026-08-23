@@ -58,8 +58,13 @@ CREATE TABLE IF NOT EXISTS products (
   title_ru TEXT,
   title_uz TEXT,
   image TEXT,
-  description TEXT
+  description TEXT,
+  unit TEXT
 );
+
+-- For databases created before products carried a weight unit. Existing rows
+-- keep a NULL unit until backfilled.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS unit TEXT;
 
 CREATE TABLE IF NOT EXISTS users (
   uid TEXT PRIMARY KEY,
@@ -209,21 +214,21 @@ INSERT INTO restaurants (
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO products (
-  id, restaurant_id, category, price, status, title_en, title_ru, title_uz, image, description
+  id, restaurant_id, category, price, status, title_en, title_ru, title_uz, image, description, unit
 ) VALUES
-  (1, 1, 2, 25000.0, 'available', 'Classic Burger', 'Классический бургер', 'Klassik burger', 'https://picsum.photos/seed/classic_burger/300/300', 'Beef patty with lettuce, tomato, and cheese'),
-  (2, 1, 2, 35000.0, 'available', 'Double Smash Burger', 'Двойной смэш бургер', 'Ikki qatlamli burger', 'https://picsum.photos/seed/double_burger/300/300', 'Two smashed beef patties with special sauce'),
-  (3, 1, 2, 12000.0, 'available', 'Crispy Fries', 'Хрустящая картошка', 'Qovurilgan kartoshka', 'https://picsum.photos/seed/fries/300/300', 'Golden crispy french fries'),
-  (4, 2, 2, 45000.0, 'available', 'Margherita Pizza', 'Пицца Маргарита', 'Margarita pizza', 'https://picsum.photos/seed/margherita/300/300', 'Classic tomato sauce with fresh mozzarella'),
-  (5, 2, 2, 55000.0, 'available', 'Pepperoni Pizza', 'Пицца Пепперони', 'Pepperoni pizza', 'https://picsum.photos/seed/pepperoni/300/300', 'Loaded with spicy pepperoni slices'),
-  (6, 2, 2, 15000.0, 'available', 'Caesar Salad', 'Салат Цезарь', 'Sezar salati', 'https://picsum.photos/seed/caesar/300/300', 'Romaine lettuce with caesar dressing and croutons'),
-  (7, 3, 2, 35000.0, 'available', 'Salmon Roll', 'Ролл с лососем', 'Salmon roll', 'https://picsum.photos/seed/salmon_roll/300/300', 'Fresh salmon with cucumber and avocado'),
-  (8, 3, 2, 40000.0, 'available', 'Dragon Roll', 'Ролл Дракон', 'Dragon roll', 'https://picsum.photos/seed/dragon_roll/300/300', 'Shrimp tempura topped with avocado'),
-  (9, 3, 1, 28000.0, 'available', 'Miso Soup', 'Мисо суп', 'Miso sho''rva', 'https://picsum.photos/seed/miso/300/300', 'Traditional Japanese miso soup with tofu'),
-  (10, 4, 2, 30000.0, 'available', 'Ribeye Burger', 'Бургер Рибай', 'Ribay burger', 'https://picsum.photos/seed/ribeye_burger/300/300', 'Grilled ribeye patty with smoked cheddar'),
-  (11, 4, 2, 22000.0, 'available', 'BBQ Bacon Burger', 'Бургер БАРБЕКЮ с беконом', 'BBQ bekonli burger', 'https://picsum.photos/seed/bbq_burger/300/300', 'Beef patty with bacon and barbecue sauce'),
-  (12, 4, 2, 14000.0, 'available', 'Onion Rings', 'Луковые кольца', 'Piyoz halqalari', 'https://picsum.photos/seed/onion_rings/300/300', 'Crispy battered onion rings'),
-  (13, 5, 2, 48000.0, 'available', 'Quattro Formaggi', 'Кватро Формаджи', 'Quattro Formaggi', 'https://picsum.photos/seed/quattro_formaggi/300/300', 'Four-cheese pizza with a crispy crust'),
-  (14, 5, 2, 52000.0, 'available', 'Diavola Pizza', 'Пицца Дьявола', 'Diavola pizza', 'https://picsum.photos/seed/diavola/300/300', 'Spicy salami with chili-infused oil'),
-  (15, 5, 2, 18000.0, 'available', 'Garlic Bread', 'Чесночный хлеб', 'Sarimsoqli non', 'https://picsum.photos/seed/garlic_bread/300/300', 'Toasted baguette with garlic butter')
+  (1, 1, 2, 25000.0, 'available', 'Classic Burger', 'Классический бургер', 'Klassik burger', 'https://picsum.photos/seed/classic_burger/300/300', 'Beef patty with lettuce, tomato, and cheese', '250g'),
+  (2, 1, 2, 35000.0, 'available', 'Double Smash Burger', 'Двойной смэш бургер', 'Ikki qatlamli burger', 'https://picsum.photos/seed/double_burger/300/300', 'Two smashed beef patties with special sauce', '350g'),
+  (3, 1, 2, 12000.0, 'available', 'Crispy Fries', 'Хрустящая картошка', 'Qovurilgan kartoshka', 'https://picsum.photos/seed/fries/300/300', 'Golden crispy french fries', '150g'),
+  (4, 2, 2, 45000.0, 'available', 'Margherita Pizza', 'Пицца Маргарита', 'Margarita pizza', 'https://picsum.photos/seed/margherita/300/300', 'Classic tomato sauce with fresh mozzarella', '500g'),
+  (5, 2, 2, 55000.0, 'available', 'Pepperoni Pizza', 'Пицца Пепперони', 'Pepperoni pizza', 'https://picsum.photos/seed/pepperoni/300/300', 'Loaded with spicy pepperoni slices', '550g'),
+  (6, 2, 2, 15000.0, 'available', 'Caesar Salad', 'Салат Цезарь', 'Sezar salati', 'https://picsum.photos/seed/caesar/300/300', 'Romaine lettuce with caesar dressing and croutons', '200g'),
+  (7, 3, 2, 35000.0, 'available', 'Salmon Roll', 'Ролл с лососем', 'Salmon roll', 'https://picsum.photos/seed/salmon_roll/300/300', 'Fresh salmon with cucumber and avocado', '300g'),
+  (8, 3, 2, 40000.0, 'available', 'Dragon Roll', 'Ролл Дракон', 'Dragon roll', 'https://picsum.photos/seed/dragon_roll/300/300', 'Shrimp tempura topped with avocado', '320g'),
+  (9, 3, 1, 28000.0, 'available', 'Miso Soup', 'Мисо суп', 'Miso sho''rva', 'https://picsum.photos/seed/miso/300/300', 'Traditional Japanese miso soup with tofu', '350ml'),
+  (10, 4, 2, 30000.0, 'available', 'Ribeye Burger', 'Бургер Рибай', 'Ribay burger', 'https://picsum.photos/seed/ribeye_burger/300/300', 'Grilled ribeye patty with smoked cheddar', '300g'),
+  (11, 4, 2, 22000.0, 'available', 'BBQ Bacon Burger', 'Бургер БАРБЕКЮ с беконом', 'BBQ bekonli burger', 'https://picsum.photos/seed/bbq_burger/300/300', 'Beef patty with bacon and barbecue sauce', '280g'),
+  (12, 4, 2, 14000.0, 'available', 'Onion Rings', 'Луковые кольца', 'Piyoz halqalari', 'https://picsum.photos/seed/onion_rings/300/300', 'Crispy battered onion rings', '150g'),
+  (13, 5, 2, 48000.0, 'available', 'Quattro Formaggi', 'Кватро Формаджи', 'Quattro Formaggi', 'https://picsum.photos/seed/quattro_formaggi/300/300', 'Four-cheese pizza with a crispy crust', '500g'),
+  (14, 5, 2, 52000.0, 'available', 'Diavola Pizza', 'Пицца Дьявола', 'Diavola pizza', 'https://picsum.photos/seed/diavola/300/300', 'Spicy salami with chili-infused oil', '520g'),
+  (15, 5, 2, 18000.0, 'available', 'Garlic Bread', 'Чесночный хлеб', 'Sarimsoqli non', 'https://picsum.photos/seed/garlic_bread/300/300', 'Toasted baguette with garlic butter', '200g')
 ON CONFLICT (id) DO NOTHING;

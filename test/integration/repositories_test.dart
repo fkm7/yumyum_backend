@@ -3,6 +3,7 @@ library;
 
 import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
 import 'package:delmer_backend/db/database_service.dart';
+import 'package:delmer_backend/models/category.dart';
 import 'package:delmer_backend/models/order.dart';
 import 'package:delmer_backend/models/refresh_token_record.dart';
 import 'package:delmer_backend/repositories/favorite_repository.dart';
@@ -98,7 +99,7 @@ void main() {
       expect(restaurant, isNotNull);
       expect(restaurant!.address, isA<Map<String, dynamic>>());
       expect(restaurant.address['city'], equals('Tashkent'));
-      expect(restaurant.productCategories, isA<List<dynamic>>());
+      expect(restaurant.productCategories, isA<List<Category>>());
     });
 
     test('maps DOUBLE PRECISION onto double', () async {
@@ -120,7 +121,7 @@ void main() {
       final filtered = await restaurants.findByCuisine(2);
 
       expect(filtered, isNotEmpty);
-      expect(filtered.every((r) => r.cuisine == 2), isTrue);
+      expect(filtered.every((r) => r.cuisine.id == 2), isTrue);
     });
 
     test('returns an empty list for a cuisine with no restaurants', () async {
@@ -131,7 +132,7 @@ void main() {
       final filtered = await restaurants.findByCategory(2);
 
       expect(filtered, isNotEmpty);
-      expect(filtered.every((r) => r.category == 2), isTrue);
+      expect(filtered.every((r) => r.category.id == 2), isTrue);
     });
 
     test('returns an empty list for a category with no restaurants',

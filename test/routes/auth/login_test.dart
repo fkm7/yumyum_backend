@@ -216,10 +216,21 @@ void main() {
         );
       });
 
-      test('reports both token lifetimes in seconds', () async {
+      test('reports both token expiries as epoch seconds', () async {
+        final before = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         final json = await body();
-        expect(json['access_token_expires_in'], equals(86400));
-        expect(json['refresh_token_expires_in'], equals(259200));
+        final after = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        const oneDay = 86400;
+        const threeDays = 259200;
+        expect(
+          json['access_token_expires_at'] as int,
+          inInclusiveRange(before + oneDay, after + oneDay),
+        );
+        expect(
+          json['refresh_token_expires_at'] as int,
+          inInclusiveRange(before + threeDays, after + threeDays),
+        );
       });
 
       test('returns the user in snake_case', () async {

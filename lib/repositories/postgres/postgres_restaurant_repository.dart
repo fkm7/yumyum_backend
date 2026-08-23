@@ -3,10 +3,47 @@ import 'package:delmer_backend/models/restaurant.dart';
 import 'package:delmer_backend/repositories/restaurant_repository.dart';
 import 'package:postgres/postgres.dart';
 
+// product_categories stores a JSONB array of category ids (e.g. `[1, 2]`);
+// this expands it into the matching `categories` rows as a JSONB array of
+// objects, so Restaurant.fromRow can decode it the same way it decodes the
+// joined cuisine/category columns. NULL is preserved as NULL (no menu
+// categories recorded yet) rather than collapsing it into an empty array.
+const _productCategories = '''
+  CASE WHEN r.product_categories IS NULL THEN NULL ELSE COALESCE(
+    (
+      SELECT jsonb_agg(
+               jsonb_build_object(
+                 'id', pc.id, 'title_en', pc.title_en,
+                 'title_ru', pc.title_ru, 'title_uz', pc.title_uz,
+                 'icon', pc.icon
+               ) ORDER BY pc.id
+             )
+      FROM categories pc
+      WHERE pc.id IN (
+        SELECT jsonb_array_elements_text(r.product_categories)::int
+      )
+    ),
+    '[]'::jsonb
+  ) END AS product_categories
+''';
+
 const _columns = '''
-  id, name, is_open, rating, logo, address, image, cuisine, category,
-  start_time, end_time, description, phone_number, delivery_cost,
-  min_delivery_time, max_delivery_time, free_delivery_from, product_categories
+  r.id, r.name, r.is_open, r.rating, r.logo, r.address, r.image,
+  r.start_time, r.end_time, r.description, r.phone_number, r.delivery_cost,
+  r.min_delivery_time, r.max_delivery_time, r.free_delivery_from,
+  $_productCategories,
+  cu.id AS cuisine_id, cu.title_en AS cuisine_title_en,
+  cu.title_ru AS cuisine_title_ru, cu.title_uz AS cuisine_title_uz,
+  cu.icon AS cuisine_icon,
+  rc.id AS category_id, rc.title_en AS category_title_en,
+  rc.title_ru AS category_title_ru, rc.title_uz AS category_title_uz,
+  rc.icon AS category_icon
+''';
+
+const _from = '''
+  restaurants r
+  JOIN cuisines cu ON cu.id = r.cuisine
+  JOIN restaurant_categories rc ON rc.id = r.category
 ''';
 
 /// PostgreSQL-backed [RestaurantRepository].
@@ -21,7 +58,7 @@ class PostgresRestaurantRepository implements RestaurantRepository {
   Future<List<Restaurant>> findAll() async {
     final conn = await database.connection;
     final result = await conn.execute(
-      'SELECT $_columns FROM restaurants ORDER BY id',
+      'SELECT $_columns FROM $_from ORDER BY r.id',
     );
     return _map(result);
   }
@@ -31,8 +68,8 @@ class PostgresRestaurantRepository implements RestaurantRepository {
     final conn = await database.connection;
     final result = await conn.execute(
       Sql.named(
-        'SELECT $_columns FROM restaurants WHERE cuisine = @cuisine '
-        'ORDER BY id',
+        'SELECT $_columns FROM $_from WHERE r.cuisine = @cuisine '
+        'ORDER BY r.id',
       ),
       parameters: {'cuisine': cuisineId},
     );
@@ -44,8 +81,8 @@ class PostgresRestaurantRepository implements RestaurantRepository {
     final conn = await database.connection;
     final result = await conn.execute(
       Sql.named(
-        'SELECT $_columns FROM restaurants WHERE category = @category '
-        'ORDER BY id',
+        'SELECT $_columns FROM $_from WHERE r.category = @category '
+        'ORDER BY r.id',
       ),
       parameters: {'category': categoryId},
     );
@@ -56,7 +93,7 @@ class PostgresRestaurantRepository implements RestaurantRepository {
   Future<Restaurant?> findById(int id) async {
     final conn = await database.connection;
     final result = await conn.execute(
-      Sql.named('SELECT $_columns FROM restaurants WHERE id = @id'),
+      Sql.named('SELECT $_columns FROM $_from WHERE r.id = @id'),
       parameters: {'id': id},
     );
     if (result.isEmpty) return null;
@@ -68,7 +105,7 @@ class PostgresRestaurantRepository implements RestaurantRepository {
     if (ids.isEmpty) return [];
     final conn = await database.connection;
     final result = await conn.execute(
-      Sql.named('SELECT $_columns FROM restaurants WHERE id = ANY(@ids)'),
+      Sql.named('SELECT $_columns FROM $_from WHERE r.id = ANY(@ids)'),
       parameters: {'ids': TypedValue(Type.integerArray, ids)},
     );
     return _map(result);

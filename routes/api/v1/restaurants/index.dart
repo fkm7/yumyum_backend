@@ -47,7 +47,7 @@ FutureOr<Response> onRequest(RequestContext context) async {
   List<Restaurant> filtered;
   if (cuisineId != null && categoryId != null) {
     filtered = (await repository.findByCuisine(cuisineId))
-        .where((r) => r.category == categoryId)
+        .where((r) => r.category.id == categoryId)
         .toList();
   } else if (cuisineId != null) {
     filtered = await repository.findByCuisine(cuisineId);

@@ -1,8 +1,35 @@
 import 'package:delmer_backend/models/cart_item.dart';
+import 'package:delmer_backend/models/category.dart';
+import 'package:delmer_backend/models/cuisine.dart';
 import 'package:delmer_backend/models/product.dart';
 import 'package:delmer_backend/models/restaurant.dart';
+import 'package:delmer_backend/models/restaurant_category.dart';
 import 'package:delmer_backend/services/order_service.dart';
 import 'package:test/test.dart';
+
+const _category = Category(
+  id: 1,
+  titleEn: 'Burgers',
+  titleRu: 'Бургеры',
+  titleUz: 'Burgerlar',
+  icon: null,
+);
+
+const _cuisine = Cuisine(
+  id: 1,
+  titleEn: 'American',
+  titleRu: 'Американская',
+  titleUz: 'Amerika oshxonasi',
+  icon: null,
+);
+
+const _restaurantCategory = RestaurantCategory(
+  id: 1,
+  titleEn: 'Burgers',
+  titleRu: 'Бургеры',
+  titleUz: 'Burgerlar',
+  icon: null,
+);
 
 Restaurant _restaurant({int id = 1, bool isOpen = true}) => Restaurant(
       id: id,
@@ -12,8 +39,8 @@ Restaurant _restaurant({int id = 1, bool isOpen = true}) => Restaurant(
       logo: null,
       address: const {'city': 'Tashkent'},
       image: null,
-      cuisine: 1,
-      category: 1,
+      cuisine: _cuisine,
+      category: _restaurantCategory,
       startTime: '09:00',
       endTime: '23:00',
       description: null,
@@ -22,7 +49,7 @@ Restaurant _restaurant({int id = 1, bool isOpen = true}) => Restaurant(
       minDeliveryTime: 20,
       maxDeliveryTime: 40,
       freeDeliveryFrom: 50000,
-      productCategories: const [1],
+      productCategories: const [_category],
     );
 
 Product _product({
@@ -34,7 +61,7 @@ Product _product({
     Product(
       id: id,
       restaurantId: restaurantId,
-      category: 1,
+      category: _category,
       price: price,
       status: status,
       titleEn: 'Product $id',
@@ -42,6 +69,7 @@ Product _product({
       titleUz: null,
       image: null,
       description: null,
+      unit: null,
     );
 
 final _orderTime = DateTime.utc(2026, 8, 15, 12);

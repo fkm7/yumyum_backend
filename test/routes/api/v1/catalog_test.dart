@@ -52,7 +52,7 @@ const _restaurantCategory = RestaurantCategory(
 const _product = Product(
   id: 1,
   restaurantId: 1,
-  category: 1,
+  category: _category,
   price: 25000,
   status: 'available',
   titleEn: 'Classic Burger',
@@ -60,6 +60,7 @@ const _product = Product(
   titleUz: null,
   image: null,
   description: null,
+  unit: null,
 );
 
 const _restaurant = Restaurant(
@@ -70,8 +71,8 @@ const _restaurant = Restaurant(
   logo: null,
   address: {'city': 'Tashkent'},
   image: null,
-  cuisine: 1,
-  category: 1,
+  cuisine: _cuisine,
+  category: _restaurantCategory,
   startTime: '09:00',
   endTime: '23:00',
   description: null,
@@ -80,7 +81,7 @@ const _restaurant = Restaurant(
   minDeliveryTime: 20,
   maxDeliveryTime: 40,
   freeDeliveryFrom: 50000,
-  productCategories: [1],
+  productCategories: [_category],
 );
 
 void main() {

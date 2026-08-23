@@ -10,8 +10,8 @@ class TokenPair {
   const TokenPair({
     required this.accessToken,
     required this.refreshToken,
-    required this.accessTokenExpiresIn,
-    required this.refreshTokenExpiresIn,
+    required this.accessTokenExpiresAt,
+    required this.refreshTokenExpiresAt,
   });
 
   /// The short-lived token used to authenticate API requests.
@@ -20,18 +20,20 @@ class TokenPair {
   /// The long-lived token used to obtain the next pair.
   final String refreshToken;
 
-  /// Lifetime of [accessToken].
-  final Duration accessTokenExpiresIn;
+  /// When [accessToken] expires.
+  final DateTime accessTokenExpiresAt;
 
-  /// Lifetime of [refreshToken].
-  final Duration refreshTokenExpiresIn;
+  /// When [refreshToken] expires.
+  final DateTime refreshTokenExpiresAt;
 
   /// The JSON representation of this pair.
   Map<String, dynamic> toJson() => {
         'access_token': accessToken,
-        'access_token_expires_in': accessTokenExpiresIn.inSeconds,
+        'access_token_expires_at':
+            accessTokenExpiresAt.millisecondsSinceEpoch ~/ 1000,
         'refresh_token': refreshToken,
-        'refresh_token_expires_in': refreshTokenExpiresIn.inSeconds,
+        'refresh_token_expires_at':
+            refreshTokenExpiresAt.millisecondsSinceEpoch ~/ 1000,
       };
 }
 
@@ -158,6 +160,7 @@ class SessionService {
   }) async {
     final now = _now();
     final tokenId = _uuid.v4();
+    final refreshTokenExpiresAt = now.add(_tokens.refreshTokenExpiresIn);
 
     await _refreshTokens.issue(
       RefreshTokenRecord(
@@ -165,7 +168,7 @@ class SessionService {
         userId: uid,
         familyId: familyId,
         issuedAt: now,
-        expiresAt: now.add(_tokens.refreshTokenExpiresIn),
+        expiresAt: refreshTokenExpiresAt,
       ),
     );
 
@@ -182,8 +185,8 @@ class SessionService {
     return TokenPair(
       accessToken: _tokens.generateAccessToken(uid),
       refreshToken: _tokens.generateRefreshToken(uid, tokenId: tokenId),
-      accessTokenExpiresIn: _tokens.accessTokenExpiresIn,
-      refreshTokenExpiresIn: _tokens.refreshTokenExpiresIn,
+      accessTokenExpiresAt: now.add(_tokens.accessTokenExpiresIn),
+      refreshTokenExpiresAt: refreshTokenExpiresAt,
     );
   }
 }
