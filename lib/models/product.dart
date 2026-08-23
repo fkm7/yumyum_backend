@@ -1,3 +1,5 @@
+import 'package:delmer_backend/models/category.dart';
+
 /// A model class representing a product on a restaurant's menu.
 class Product {
   /// Constructs a [Product] with the given properties.
@@ -12,6 +14,7 @@ class Product {
     required this.titleUz,
     required this.image,
     required this.description,
+    required this.unit,
   });
 
   /// Builds a [Product] from a database column map.
@@ -23,7 +26,13 @@ class Product {
     return Product(
       id: row['id'] as int,
       restaurantId: row['restaurant_id'] as int,
-      category: row['category'] as int,
+      category: Category(
+        id: row['category_id'] as int,
+        titleEn: row['category_title_en'] as String,
+        titleRu: row['category_title_ru'] as String,
+        titleUz: row['category_title_uz'] as String,
+        icon: row['category_icon'] as String?,
+      ),
       price: (row['price'] as num).toDouble(),
       status: row['status'] as String,
       titleEn: row['title_en'] as String,
@@ -31,6 +40,7 @@ class Product {
       titleUz: row['title_uz'] as String?,
       image: row['image'] as String?,
       description: row['description'] as String?,
+      unit: row['unit'] as String?,
     );
   }
 
@@ -40,8 +50,8 @@ class Product {
   /// Identifier of the restaurant this product belongs to.
   final int restaurantId;
 
-  /// Identifier of the category this product belongs to.
-  final int category;
+  /// The category this product belongs to.
+  final Category category;
 
   /// Unit price.
   final double price;
@@ -64,11 +74,14 @@ class Product {
   /// Free-text description.
   final String? description;
 
+  /// The product's weight or volume, e.g. "250g" or "350ml".
+  final String? unit;
+
   /// The JSON representation of this product.
   Map<String, dynamic> toJson() => {
         'id': id,
         'restaurant_id': restaurantId,
-        'category': category,
+        'category': category.toJson(),
         'price': price,
         'status': status,
         'title_en': titleEn,
@@ -76,5 +89,6 @@ class Product {
         'title_uz': titleUz,
         'image': image,
         'description': description,
+        'unit': unit,
       };
 }

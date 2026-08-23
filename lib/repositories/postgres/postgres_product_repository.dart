@@ -4,9 +4,14 @@ import 'package:delmer_backend/repositories/product_repository.dart';
 import 'package:postgres/postgres.dart';
 
 const _columns = '''
-  id, restaurant_id, category, status, price, title_en, title_ru, title_uz,
-  image, description
+  p.id, p.restaurant_id, p.status, p.price, p.title_en, p.title_ru,
+  p.title_uz, p.image, p.description, p.unit,
+  c.id AS category_id, c.title_en AS category_title_en,
+  c.title_ru AS category_title_ru, c.title_uz AS category_title_uz,
+  c.icon AS category_icon
 ''';
+
+const _from = 'products p JOIN categories c ON c.id = p.category';
 
 /// PostgreSQL-backed [ProductRepository].
 class PostgresProductRepository implements ProductRepository {
@@ -20,7 +25,7 @@ class PostgresProductRepository implements ProductRepository {
   Future<List<Product>> findAll() async {
     final conn = await database.connection;
     final result = await conn.execute(
-      'SELECT $_columns FROM products ORDER BY id',
+      'SELECT $_columns FROM $_from ORDER BY p.id',
     );
     return _map(result);
   }
@@ -29,7 +34,7 @@ class PostgresProductRepository implements ProductRepository {
   Future<Product?> findById(int id) async {
     final conn = await database.connection;
     final result = await conn.execute(
-      Sql.named('SELECT $_columns FROM products WHERE id = @id'),
+      Sql.named('SELECT $_columns FROM $_from WHERE p.id = @id'),
       parameters: {'id': id},
     );
     if (result.isEmpty) return null;
@@ -41,7 +46,8 @@ class PostgresProductRepository implements ProductRepository {
     final conn = await database.connection;
     final result = await conn.execute(
       Sql.named(
-        'SELECT $_columns FROM products WHERE restaurant_id = @id ORDER BY id',
+        'SELECT $_columns FROM $_from WHERE p.restaurant_id = @id '
+        'ORDER BY p.id',
       ),
       parameters: {'id': restaurantId},
     );
@@ -55,7 +61,7 @@ class PostgresProductRepository implements ProductRepository {
     // ANY(@ids) keeps this a single round trip and a single prepared
     // statement regardless of cart size, instead of one SELECT per line.
     final result = await conn.execute(
-      Sql.named('SELECT $_columns FROM products WHERE id = ANY(@ids)'),
+      Sql.named('SELECT $_columns FROM $_from WHERE p.id = ANY(@ids)'),
       parameters: {'ids': TypedValue(Type.integerArray, ids)},
     );
     return _map(result);

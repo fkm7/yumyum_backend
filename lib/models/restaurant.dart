@@ -1,3 +1,7 @@
+import 'package:delmer_backend/models/category.dart';
+import 'package:delmer_backend/models/cuisine.dart';
+import 'package:delmer_backend/models/restaurant_category.dart';
+
 /// A model class representing a restaurant.
 class Restaurant {
   /// Constructs a [Restaurant] with the given properties.
@@ -9,6 +13,7 @@ class Restaurant {
     required this.logo,
     required this.address,
     required this.image,
+    required this.cuisine,
     required this.category,
     required this.startTime,
     required this.endTime,
@@ -23,9 +28,9 @@ class Restaurant {
 
   /// Builds a [Restaurant] from a database column map.
   ///
-  /// `address` and `product_categories` are `JSONB` columns, which the postgres
-  /// driver returns already decoded — a [Map] and a [List] respectively, not
-  /// JSON strings.
+  /// `address` and `product_categories` are `JSONB` columns, which the
+  /// postgres driver returns already decoded — a [Map] and a [List] of
+  /// category row maps respectively, not JSON strings.
   factory Restaurant.fromRow(Map<String, dynamic> row) {
     return Restaurant(
       id: row['id'] as int,
@@ -35,7 +40,20 @@ class Restaurant {
       logo: row['logo'] as String?,
       address: row['address'] as Map<String, dynamic>,
       image: row['image'] as String?,
-      category: row['category'] as int,
+      cuisine: Cuisine(
+        id: row['cuisine_id'] as int,
+        titleEn: row['cuisine_title_en'] as String,
+        titleRu: row['cuisine_title_ru'] as String,
+        titleUz: row['cuisine_title_uz'] as String,
+        icon: row['cuisine_icon'] as String?,
+      ),
+      category: RestaurantCategory(
+        id: row['category_id'] as int,
+        titleEn: row['category_title_en'] as String,
+        titleRu: row['category_title_ru'] as String,
+        titleUz: row['category_title_uz'] as String,
+        icon: row['category_icon'] as String?,
+      ),
       startTime: row['start_time'] as String?,
       endTime: row['end_time'] as String?,
       description: row['description'] as String?,
@@ -44,7 +62,9 @@ class Restaurant {
       minDeliveryTime: row['min_delivery_time'] as int?,
       maxDeliveryTime: row['max_delivery_time'] as int?,
       freeDeliveryFrom: (row['free_delivery_from'] as num?)?.toDouble(),
-      productCategories: row['product_categories'] as List<dynamic>?,
+      productCategories: (row['product_categories'] as List<dynamic>?)
+          ?.map((e) => Category.fromRow(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -69,8 +89,12 @@ class Restaurant {
   /// URL of the restaurant cover image.
   final String? image;
 
-  /// Identifier of the category this restaurant belongs to.
-  final int category;
+  /// The cuisine this restaurant serves.
+  final Cuisine cuisine;
+
+  /// The kind of food this restaurant is known for (Burgers, Pizza, Sushi,
+  /// ...), as distinct from [cuisine].
+  final RestaurantCategory category;
 
   /// Opening time, as `HH:mm`.
   final String? startTime;
@@ -96,8 +120,8 @@ class Restaurant {
   /// Order total above which delivery is free.
   final double? freeDeliveryFrom;
 
-  /// Identifiers of the menu categories this restaurant offers.
-  final List<dynamic>? productCategories;
+  /// The menu categories this restaurant offers.
+  final List<Category>? productCategories;
 
   /// The JSON representation of this restaurant.
   Map<String, dynamic> toJson() => {
@@ -108,7 +132,8 @@ class Restaurant {
         'logo': logo,
         'address': address,
         'image': image,
-        'category': category,
+        'cuisine': cuisine.toJson(),
+        'category': category.toJson(),
         'start_time': startTime,
         'end_time': endTime,
         'description': description,
@@ -117,6 +142,7 @@ class Restaurant {
         'min_delivery_time': minDeliveryTime,
         'max_delivery_time': maxDeliveryTime,
         'free_delivery_from': freeDeliveryFrom,
-        'product_categories': productCategories,
+        'product_categories':
+            productCategories?.map((c) => c.toJson()).toList(),
       };
 }
