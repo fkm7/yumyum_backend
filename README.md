@@ -121,10 +121,8 @@ would be blocked.
 | `PORT` | `8080` | |
 | `JWT_SECRET` | development fallback | Must be set in production; a warning is logged when it is not. |
 | `BCRYPT_ROUNDS` | `12` | bcrypt cost factor. Logarithmic — each increment doubles the work. Raising it migrates existing credentials on their next login. |
-| `DATABASE_URL` | unset | `postgres://user:pass@host:port/db`. Takes priority over the `DB_*` vars below when set; this is what `fly postgres attach` provisions automatically. |
-| `DB_HOST` / `DB_PORT` | `localhost` / `5432` | Used only when `DATABASE_URL` is unset. |
-| `DB_NAME` / `DB_USER` / `DB_PASS` | `yumyum` / `felix` / `1997` | Used only when `DATABASE_URL` is unset. |
-| `DB_SSL_MODE` | `disable` | Set to `require` for a database reached over the public internet (e.g. not Fly's private 6PN network). |
+| `DB_HOST` / `DB_PORT` | `localhost` / `5432` | |
+| `DB_NAME` / `DB_USER` / `DB_PASS` | `yumyum` / `felix` / `1997` | |
 
 [license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [license_link]: https://opensource.org/licenses/MIT
