@@ -10,6 +10,12 @@ class DatabaseService {
   static final DatabaseService instance = DatabaseService._();
 
   /// The PostgreSQL connection instance.
+  ///
+  /// `fly postgres attach` (and Heroku-style platforms) provision a database
+  /// and expose it as a single `DATABASE_URL` secret, not as the discrete
+  /// `DB_HOST`/`DB_PORT`/... vars used for local development. When present,
+  /// it takes priority so an attached Fly Postgres cluster is picked up
+  /// without extra configuration.
   late final Future<Connection> connection = Connection.open(
     _endpoint(),
     settings: ConnectionSettings(sslMode: _sslMode()),
