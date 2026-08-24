@@ -13,11 +13,10 @@ RUN dart pub global activate dart_frog_cli
 RUN dart pub global run dart_frog_cli:dart_frog build
 RUN dart compile exe build/bin/server.dart -o build/bin/server
 
-# Runtime stage: only the Dart runtime libs and the compiled binary.
+# Runtime stage: minimal Debian with working DNS resolver + CA certs.
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
-CMD ["/app/bin/server"]
-COPY --from=build /runtime/ /
+
 COPY --from=build /app/build/bin/server /app/bin/server
 
 EXPOSE 8080
