@@ -6,20 +6,21 @@ import 'package:test/test.dart';
 import '../../../routes/auth/refresh.dart' as route;
 import '../../helpers/test_context.dart';
 
-const _pair = TokenPair(
+final _pair = TokenPair(
   accessToken: 'new-access',
   refreshToken: 'new-refresh',
-  accessTokenExpiresIn: Duration(days: 1),
-  refreshTokenExpiresIn: Duration(days: 3),
+  accessTokenExpiresAt: DateTime.fromMillisecondsSinceEpoch(86400 * 1000),
+  refreshTokenExpiresAt: DateTime.fromMillisecondsSinceEpoch(259200 * 1000),
 );
 
 Future<Response> _invoke(
   Request request, {
-  RefreshResult result = const RefreshSucceeded(_pair),
+  RefreshResult? result,
   MockSessionService? sessions,
 }) {
   final service = sessions ?? MockSessionService();
-  when(() => service.rotate(any())).thenAnswer((_) async => result);
+  when(() => service.rotate(any()))
+      .thenAnswer((_) async => result ?? RefreshSucceeded(_pair));
 
   final context = TestContext(request: request)
     ..provide<SessionService>(service);
@@ -74,9 +75,9 @@ void main() {
         await jsonBody(response),
         equals({
           'access_token': 'new-access',
-          'access_token_expires_in': 86400,
+          'access_token_expires_at': 86400,
           'refresh_token': 'new-refresh',
-          'refresh_token_expires_in': 259200,
+          'refresh_token_expires_at': 259200,
         }),
       );
     });

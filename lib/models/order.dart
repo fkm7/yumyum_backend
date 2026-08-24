@@ -33,7 +33,9 @@ class OrderProduct {
       titleEn: product.titleEn,
       titleRu: product.titleRu,
       titleUz: product.titleUz,
-      category: product.category,
+      // Only the id is captured, matching the persisted JSONB shape; see the
+      // class doc.
+      category: product.category.id,
       description: product.description,
       institution: product.restaurantId,
     );

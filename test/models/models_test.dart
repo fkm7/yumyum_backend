@@ -93,7 +93,11 @@ void main() {
     const row = {
       'id': 1,
       'restaurant_id': 2,
-      'category': 3,
+      'category_id': 3,
+      'category_title_en': 'Dessert',
+      'category_title_ru': 'Десерт',
+      'category_title_uz': 'Shirinlik',
+      'category_icon': null,
       'price': 25000.0,
       'status': 'available',
       'title_en': 'Classic Burger',
@@ -101,10 +105,23 @@ void main() {
       'title_uz': null,
       'image': null,
       'description': null,
+      'unit': null,
     };
 
-    test('round-trips a row through toJson', () {
-      expect(Product.fromRow(row).toJson(), equals(row));
+    test('nests the joined category columns under category', () {
+      final json = Product.fromRow(row).toJson();
+      expect(
+        json['category'],
+        equals({
+          'id': 3,
+          'title_en': 'Dessert',
+          'title_ru': 'Десерт',
+          'title_uz': 'Shirinlik',
+          'icon': null,
+        }),
+      );
+      expect(json['id'], equals(1));
+      expect(json['restaurant_id'], equals(2));
     });
 
     // DOUBLE PRECISION arrives as a double, but an int-typed column would
@@ -125,7 +142,16 @@ void main() {
       'logo': null,
       'address': {'city': 'Tashkent'},
       'image': null,
-      'category': 1,
+      'cuisine_id': 1,
+      'cuisine_title_en': 'American',
+      'cuisine_title_ru': 'Американская',
+      'cuisine_title_uz': 'Amerika oshxonasi',
+      'cuisine_icon': null,
+      'category_id': 1,
+      'category_title_en': 'Burgers',
+      'category_title_ru': 'Бургеры',
+      'category_title_uz': 'Burgerlar',
+      'category_icon': null,
       'start_time': '09:00',
       'end_time': '23:00',
       'description': null,
@@ -134,18 +160,48 @@ void main() {
       'min_delivery_time': 20,
       'max_delivery_time': 40,
       'free_delivery_from': 50000.0,
-      'product_categories': [1],
+      'product_categories': [
+        {
+          'id': 2,
+          'title_en': 'Second course',
+          'title_ru': 'Второе',
+          'title_uz': 'Ikkinchi taom',
+          'icon': null,
+        },
+      ],
     };
 
-    test('round-trips a row through toJson', () {
-      expect(Restaurant.fromRow(row).toJson(), equals(row));
+    test('nests the joined cuisine and category columns', () {
+      final json = Restaurant.fromRow(row).toJson();
+      expect(
+        json['cuisine'],
+        equals({
+          'id': 1,
+          'title_en': 'American',
+          'title_ru': 'Американская',
+          'title_uz': 'Amerika oshxonasi',
+          'icon': null,
+        }),
+      );
+      expect(
+        json['category'],
+        equals({
+          'id': 1,
+          'title_en': 'Burgers',
+          'title_ru': 'Бургеры',
+          'title_uz': 'Burgerlar',
+          'icon': null,
+        }),
+      );
+      expect(json['id'], equals(1));
     });
 
     // JSONB columns arrive decoded, not as JSON strings.
     test('reads address and product_categories as decoded JSON', () {
       final restaurant = Restaurant.fromRow(row);
       expect(restaurant.address, equals({'city': 'Tashkent'}));
-      expect(restaurant.productCategories, equals([1]));
+      expect(restaurant.productCategories!.single.id, equals(2));
+      expect(restaurant.productCategories!.single.titleEn, 'Second course');
     });
 
     test('tolerates null nullable numerics', () {
@@ -307,10 +363,17 @@ void main() {
     });
 
     test('OrderProduct.from prices the line and records the restaurant', () {
+      const category = Category(
+        id: 1,
+        titleEn: 'Dessert',
+        titleRu: 'Десерт',
+        titleUz: 'Shirinlik',
+        icon: null,
+      );
       const product = Product(
         id: 7,
         restaurantId: 3,
-        category: 1,
+        category: category,
         price: 1500,
         status: 'available',
         titleEn: 'Fries',
@@ -318,6 +381,7 @@ void main() {
         titleUz: null,
         image: null,
         description: null,
+        unit: null,
       );
 
       final line = OrderProduct.from(product, 4);

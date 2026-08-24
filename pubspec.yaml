@@ -12,6 +12,7 @@ dependencies:
   dart_frog: ^1.0.0
   dart_jsonwebtoken: ^2.8.0
   postgres: ^3.0.0
+  redis: ^4.1.0
   uuid: ^4.0.0
 
 dev_dependencies:
