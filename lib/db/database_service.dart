@@ -17,51 +17,39 @@ class DatabaseService {
   /// it takes priority so an attached Fly Postgres cluster is picked up
   /// without extra configuration.
   late final Future<Connection> connection = Connection.open(
-    _endpoint(),
-    settings: ConnectionSettings(sslMode: _sslMode()),
+    _endpoint,
+    settings: ConnectionSettings(sslMode: _sslMode),
   );
 
-  /// Builds the endpoint to connect to.
-  ///
-  /// `DATABASE_URL`, when set, is a full `postgres://user:pass@host:port/db`
-  /// connection string — how Fly Postgres and similar platforms inject
-  /// credentials — and takes priority over the discrete `DB_*` variables,
-  /// which remain the local / docker-compose path.
-  static Endpoint _endpoint() {
+  Endpoint get _endpoint {
     final databaseUrl = Platform.environment['DATABASE_URL'];
-    if (databaseUrl == null) {
+    if (databaseUrl != null && databaseUrl.isNotEmpty) {
+      final uri = Uri.parse(databaseUrl);
+      final userInfo = uri.userInfo.split(':');
       return Endpoint(
-        host: Platform.environment['DB_HOST'] ?? 'localhost',
-        port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
-        database: Platform.environment['DB_NAME'] ?? 'delmer',
-        username: Platform.environment['DB_USER'] ?? 'farrukh',
-        password: Platform.environment['DB_PASS'] ?? '1997',
+        host: uri.host,
+        port: uri.hasPort ? uri.port : 5432,
+        database: uri.path.replaceFirst('/', ''),
+        username: Uri.decodeComponent(userInfo[0]),
+        password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
       );
     }
 
-    final uri = Uri.parse(databaseUrl);
-    final userInfo = uri.userInfo.split(':');
     return Endpoint(
-      host: uri.host,
-      port: uri.hasPort ? uri.port : 5432,
-      database: uri.path.isEmpty ? 'delmer' : uri.path.substring(1),
-      username: userInfo.isNotEmpty && userInfo.first.isNotEmpty
-          ? Uri.decodeComponent(userInfo.first)
-          : 'farrukh',
-      password: userInfo.length > 1
-          ? Uri.decodeComponent(userInfo[1])
-          : '1997',
+      host: Platform.environment['DB_HOST'] ?? 'localhost',
+      port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
+      database: Platform.environment['DB_NAME'] ?? 'delmer',
+      username: Platform.environment['DB_USER'] ?? 'farrukh',
+      password: Platform.environment['DB_PASS'] ?? '1997',
     );
   }
 
-  /// Whether to require TLS, taken from `DATABASE_URL`'s `sslmode` query
-  /// parameter. Defaults to disabled, matching a private-network connection
-  /// (e.g. Fly Postgres over 6PN) or a local/docker-compose database.
-  static SslMode _sslMode() {
-    final databaseUrl = Platform.environment['DATABASE_URL'];
-    if (databaseUrl == null) return SslMode.disable;
-    final sslMode = Uri.parse(databaseUrl).queryParameters['sslmode'];
-    return sslMode == 'require' || sslMode == 'verify-full'
+  /// Fly Postgres is reached over the private 6PN network, which does not
+  /// use TLS, so plain `DATABASE_URL`/`DB_*` connections stay disabled by
+  /// default. Set `DB_SSL_MODE=require` for a database that sits behind
+  /// public TLS (e.g. a managed provider reached over the public internet).
+  SslMode get _sslMode {
+    return Platform.environment['DB_SSL_MODE'] == 'require'
         ? SslMode.require
         : SslMode.disable;
   }
