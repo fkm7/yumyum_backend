@@ -132,6 +132,8 @@ class Order {
     required this.deliveryAddress,
     required this.courier,
     required this.paymentDetail,
+    this.addressId,
+    this.paymentMethodId,
   });
 
   /// Builds an [Order] from a database column map.
@@ -146,8 +148,10 @@ class Order {
       products: (row['products'] as List<dynamic>)
           .map((e) => OrderProduct.fromJson(e as Map<String, dynamic>))
           .toList(),
+      addressId: row['address_id'] as String?,
       deliveryAddress: row['delivery_address'] as Map<String, dynamic>?,
       courier: row['courier'] as Map<String, dynamic>?,
+      paymentMethodId: row['payment_method_id'] as String?,
       paymentDetail: row['payment_detail'] as Map<String, dynamic>?,
     );
   }
@@ -173,13 +177,25 @@ class Order {
   /// The ordered line items.
   final List<OrderProduct> products;
 
-  /// Structured delivery address, if supplied.
+  /// Identifier of the saved [Address] used for delivery, if any.
+  ///
+  /// This is a live reference and can go stale (the address may later be
+  /// edited or deleted); [deliveryAddress] is the point-in-time snapshot
+  /// that stays accurate regardless.
+  final String? addressId;
+
+  /// Structured delivery address snapshot, if supplied.
   final Map<String, dynamic>? deliveryAddress;
 
   /// Assigned courier, if any.
   final Map<String, dynamic>? courier;
 
-  /// Payment details, if any.
+  /// Identifier of the saved [PaymentMethod] used, if any.
+  ///
+  /// Same staleness caveat as [addressId]: [paymentDetail] is the snapshot.
+  final String? paymentMethodId;
+
+  /// Payment details snapshot, if any.
   final Map<String, dynamic>? paymentDetail;
 
   /// The JSON representation of this order.
@@ -192,8 +208,10 @@ class Order {
         'order_time': orderTime.toIso8601String(),
         'restaurant_info': restaurantInfo,
         'products': products.map((p) => p.toJson()).toList(),
+        'address_id': addressId,
         'delivery_address': deliveryAddress,
         'courier': courier,
+        'payment_method_id': paymentMethodId,
         'payment_detail': paymentDetail,
       };
 }

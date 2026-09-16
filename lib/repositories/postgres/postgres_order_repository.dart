@@ -7,7 +7,7 @@ import 'package:postgres/postgres.dart';
 
 const _columns = '''
   id, user_id, cost, status, order_time, restaurant_info, products,
-  delivery_address, courier, payment_detail
+  address_id, delivery_address, courier, payment_method_id, payment_detail
 ''';
 
 /// PostgreSQL-backed [OrderRepository].
@@ -49,10 +49,12 @@ class PostgresOrderRepository implements OrderRepository {
       Sql.named('''
         INSERT INTO orders
           (id, user_id, cost, status, order_time, restaurant_info, products,
-           delivery_address, courier, payment_detail)
+           address_id, delivery_address, courier, payment_method_id,
+           payment_detail)
         VALUES
           (@id, @user_id, @cost, @status, @order_time, @restaurant_info::jsonb,
-           @products::jsonb, @delivery_address::jsonb, NULL, NULL)
+           @products::jsonb, @address_id, @delivery_address::jsonb, NULL,
+           @payment_method_id, @payment_detail::jsonb)
       '''),
       parameters: {
         'id': order.id,
@@ -64,9 +66,14 @@ class PostgresOrderRepository implements OrderRepository {
         'products': jsonEncode(
           order.products.map((p) => p.toJson()).toList(),
         ),
+        'address_id': order.addressId,
         'delivery_address': order.deliveryAddress == null
             ? null
             : jsonEncode(order.deliveryAddress),
+        'payment_method_id': order.paymentMethodId,
+        'payment_detail': order.paymentDetail == null
+            ? null
+            : jsonEncode(order.paymentDetail),
       },
     );
     return order;

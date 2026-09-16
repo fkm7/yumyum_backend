@@ -298,14 +298,12 @@ void main() {
       verify(() => repository.findByCategory(3)).called(1);
     });
 
-    test('filters by both cuisine and category when both are given',
-        () async {
+    test('filters by both cuisine and category when both are given', () async {
       final repository = MockRestaurantRepository();
       when(() => repository.findByCuisine(any()))
           .thenAnswer((_) async => [_restaurant]);
       final context = TestContext(
-        request:
-            jsonRequest('GET', query: {'cuisine': '1', 'category': '999'}),
+        request: jsonRequest('GET', query: {'cuisine': '1', 'category': '999'}),
       )..provide<RestaurantRepository>(repository);
 
       final response = await restaurants.onRequest(context.context);

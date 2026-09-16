@@ -1,5 +1,7 @@
+import 'package:delmer_backend/models/address.dart';
 import 'package:delmer_backend/models/cart_item.dart';
 import 'package:delmer_backend/models/order.dart';
+import 'package:delmer_backend/models/payment_method.dart';
 import 'package:delmer_backend/models/product.dart';
 import 'package:delmer_backend/models/restaurant.dart';
 
@@ -69,6 +71,13 @@ class ProductsUnavailable extends OrderBuildResult {
 /// ids; ids missing from it are reported rather than silently dropped, which is
 /// what the previous implementation did (it `continue`d past unknown products
 /// and could return a 201 for an empty, zero-cost order).
+///
+/// [address] and [paymentMethod] are the already-loaded, already
+/// ownership-checked entities the route resolved from `addressId` /
+/// `paymentMethodId`. Their `toJson()` is snapshotted onto the order the same
+/// way [Restaurant.toJson] is snapshotted into `restaurant_info`: the FK can
+/// go stale if the address is later edited or deleted, the snapshot cannot.
+/// [paymentMethod] is optional — a cash-on-delivery order has none.
 OrderBuildResult buildOrder({
   required String orderId,
   required String userId,
@@ -76,7 +85,8 @@ OrderBuildResult buildOrder({
   required List<Product> available,
   required List<CartItem> requested,
   required DateTime orderTime,
-  Map<String, dynamic>? deliveryAddress,
+  required Address address,
+  PaymentMethod? paymentMethod,
 }) {
   if (requested.isEmpty) return const EmptyCart();
   if (!restaurant.isOpen) return const RestaurantClosed();
@@ -125,9 +135,11 @@ OrderBuildResult buildOrder({
       orderTime: orderTime,
       restaurantInfo: restaurant.toJson(),
       products: products,
-      deliveryAddress: deliveryAddress,
+      addressId: address.id,
+      deliveryAddress: address.toJson(),
       courier: null,
-      paymentDetail: null,
+      paymentMethodId: paymentMethod?.id,
+      paymentDetail: paymentMethod?.toJson(),
     ),
   );
 }

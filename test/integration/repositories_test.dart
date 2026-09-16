@@ -135,8 +135,7 @@ void main() {
       expect(filtered.every((r) => r.category.id == 2), isTrue);
     });
 
-    test('returns an empty list for a category with no restaurants',
-        () async {
+    test('returns an empty list for a category with no restaurants', () async {
       expect(await restaurants.findByCategory(999999), isEmpty);
     });
 
