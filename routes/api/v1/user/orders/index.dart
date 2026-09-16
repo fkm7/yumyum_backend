@@ -4,7 +4,10 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:delmer_backend/auth/authenticated_user.dart';
 import 'package:delmer_backend/models/cart_item.dart';
 import 'package:delmer_backend/models/order.dart';
+import 'package:delmer_backend/models/payment_method.dart';
+import 'package:delmer_backend/repositories/address_repository.dart';
 import 'package:delmer_backend/repositories/order_repository.dart';
+import 'package:delmer_backend/repositories/payment_repository.dart';
 import 'package:delmer_backend/repositories/product_repository.dart';
 import 'package:delmer_backend/repositories/restaurant_repository.dart';
 import 'package:delmer_backend/services/order_service.dart';
@@ -66,6 +69,50 @@ Future<Response> _createOrder(RequestContext context) async {
     requested.add(item);
   }
 
+  final addressId = body['addressId'];
+  if (addressId is! String || addressId.isEmpty) {
+    return Response.json(
+      statusCode: 422,
+      body: {'error': 'addressId is required'},
+    );
+  }
+
+  final user = context.read<AuthenticatedUser>();
+
+  // A caller must not be able to place an order against someone else's saved
+  // address, so a foreign address is answered the same as a missing one —
+  // matching the ownership-check pattern already used for a single order at
+  // GET /api/v1/user/orders/[id].
+  final address = await context.read<AddressRepository>().findById(addressId);
+  if (address == null || address.userId != user.uid) {
+    return Response.json(
+      statusCode: 404,
+      body: {'error': 'Address not found'},
+    );
+  }
+
+  // Payment method is optional at this stage: cash-on-delivery orders have
+  // nothing to look up.
+  final rawPaymentMethodId = body['paymentMethodId'];
+  PaymentMethod? paymentMethod;
+  if (rawPaymentMethodId != null) {
+    if (rawPaymentMethodId is! String || rawPaymentMethodId.isEmpty) {
+      return Response.json(
+        statusCode: 422,
+        body: {'error': 'paymentMethodId must be a string'},
+      );
+    }
+    paymentMethod = await context
+        .read<PaymentRepository>()
+        .findById(rawPaymentMethodId);
+    if (paymentMethod == null || paymentMethod.userId != user.uid) {
+      return Response.json(
+        statusCode: 404,
+        body: {'error': 'Payment method not found'},
+      );
+    }
+  }
+
   final restaurant =
       await context.read<RestaurantRepository>().findById(restaurantId);
   if (restaurant == null) {
@@ -81,12 +128,13 @@ Future<Response> _createOrder(RequestContext context) async {
 
   final result = buildOrder(
     orderId: _uuid.v4(),
-    userId: context.read<AuthenticatedUser>().uid,
+    userId: user.uid,
     restaurant: restaurant,
     available: available,
     requested: requested,
     orderTime: DateTime.now().toUtc(),
-    deliveryAddress: body['deliveryAddress'] as Map<String, dynamic>?,
+    address: address,
+    paymentMethod: paymentMethod,
   );
 
   // Exhaustive over the sealed OrderBuildResult: a new failure mode added to
