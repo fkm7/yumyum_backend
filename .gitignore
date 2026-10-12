@@ -18,3 +18,5 @@ coverage/
 # VS Code related files
 .vscode/
 .zed
+# Environment variables
+.env
