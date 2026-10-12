@@ -17,7 +17,10 @@ RUN dart compile exe build/bin/server.dart -o build/bin/server
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /app
+
 COPY --from=build /app/build/bin/server /app/bin/server
+COPY --from=build /app/public ./public
 
 EXPOSE 8080
 CMD ["/app/bin/server"]
