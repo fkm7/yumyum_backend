@@ -26,6 +26,15 @@ abstract class RefreshTokenRepository {
   /// that was replayed.
   Future<void> revokeFamily(String familyId, {required DateTime revokedAt});
 
+  /// Revokes every unrevoked token belonging to [userId], across every
+  /// rotation family.
+  ///
+  /// Used to sign a user out everywhere at once, e.g. after a password
+  /// change or a password-reset confirmation — anyone else holding a
+  /// refresh token for this account (a stolen device, a leaked token)
+  /// should stop being able to use it.
+  Future<void> revokeAllForUser(String userId, {required DateTime revokedAt});
+
   /// Deletes records that expired before [now], returning how many went.
   ///
   /// Expired tokens are already refused, so this is housekeeping rather than a

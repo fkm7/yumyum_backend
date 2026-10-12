@@ -87,6 +87,22 @@ class PostgresRefreshTokenRepository implements RefreshTokenRepository {
   }
 
   @override
+  Future<void> revokeAllForUser(
+    String userId, {
+    required DateTime revokedAt,
+  }) async {
+    final conn = await database.connection;
+    await conn.execute(
+      Sql.named('''
+        UPDATE refresh_tokens
+        SET revoked_at = @revoked_at
+        WHERE user_id = @user_id AND revoked_at IS NULL
+      '''),
+      parameters: {'user_id': userId, 'revoked_at': revokedAt},
+    );
+  }
+
+  @override
   Future<int> deleteExpired(DateTime now) async {
     final db = await database.connection;
     final result = await db.execute(

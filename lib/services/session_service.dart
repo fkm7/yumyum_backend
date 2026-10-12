@@ -155,6 +155,17 @@ class SessionService {
         revokedAt: _now());
   }
 
+  /// Revokes every existing session for [uid] and starts a fresh one.
+  ///
+  /// Used after a password change or a password-reset confirmation: anyone
+  /// else holding a refresh token for this account — a stolen device, a
+  /// leaked token — is signed out, and the caller gets a working pair back
+  /// so their own session isn't broken by the same sweep.
+  Future<TokenPair> restartAllSessions(String uid) async {
+    await _refreshTokens.revokeAllForUser(uid, revokedAt: _now());
+    return start(uid);
+  }
+
   Future<TokenPair> _issue(
     String uid, {
     required String familyId,
