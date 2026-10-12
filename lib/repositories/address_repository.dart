@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/address.dart';
+import 'package:yumyum_backend/models/address.dart';
 
 /// Read and write access to the `addresses` table.
 abstract class AddressRepository {
@@ -18,13 +18,13 @@ abstract class AddressRepository {
   Future<Address> create({
     required String userId,
     required String type,
-    String? label,
     required String street,
     required String city,
     required String country,
+    required bool isDefault,
+    String? label,
     double? latitude,
     double? longitude,
-    required bool isDefault,
   });
 
   /// Updates the address with the given id, applying only the non-null

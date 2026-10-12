@@ -1,6 +1,6 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/address.dart';
-import 'package:delmer_backend/repositories/address_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/address.dart';
+import 'package:yumyum_backend/repositories/address_repository.dart';
 import 'package:postgres/postgres.dart';
 import 'package:uuid/uuid.dart';
 
@@ -17,13 +17,12 @@ class PostgresAddressRepository implements AddressRepository {
 
   /// The database whose connection this repository executes against.
   final DatabaseService database;
-
   final Uuid _uuid;
 
   @override
   Future<List<Address>> findByUser(String userId) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named(
         'SELECT $_columns FROM addresses WHERE user_id = @user_id '
         'ORDER BY created_at DESC',
@@ -35,8 +34,8 @@ class PostgresAddressRepository implements AddressRepository {
 
   @override
   Future<Address?> findById(String id) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('SELECT $_columns FROM addresses WHERE id = @id'),
       parameters: {'id': id},
     );
@@ -48,18 +47,18 @@ class PostgresAddressRepository implements AddressRepository {
   Future<Address> create({
     required String userId,
     required String type,
-    String? label,
     required String street,
     required String city,
     required String country,
+    required bool isDefault,
+    String? label,
     double? latitude,
     double? longitude,
-    required bool isDefault,
   }) async {
-    final conn = await database.connection;
+    final db = await database.connection;
     final id = _uuid.v4();
 
-    await conn.runTx((session) async {
+    await db.runTx((session) async {
       // Cleared before the insert, inside the same transaction, so a
       // concurrent read never sees two defaults or zero defaults.
       if (isDefault) {
@@ -141,8 +140,8 @@ class PostgresAddressRepository implements AddressRepository {
       isDefault: isDefault ?? existing.isDefault,
     );
 
-    final conn = await database.connection;
-    await conn.runTx((session) async {
+    final db = await database.connection;
+    await db.runTx((session) async {
       if (merged.isDefault) {
         await session.execute(
           Sql.named(
@@ -179,8 +178,8 @@ class PostgresAddressRepository implements AddressRepository {
 
   @override
   Future<void> delete(String id) async {
-    final conn = await database.connection;
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute(
       Sql.named('DELETE FROM addresses WHERE id = @id'),
       parameters: {'id': id},
     );

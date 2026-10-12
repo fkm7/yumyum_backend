@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/user.dart';
+import 'package:yumyum_backend/models/user.dart';
 
 /// Read and write access to the `users` table.
 abstract class UserRepository {

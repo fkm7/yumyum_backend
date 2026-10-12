@@ -1,21 +1,21 @@
 @Tags(['integration'])
 library;
 
-import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/category.dart';
-import 'package:delmer_backend/models/order.dart';
-import 'package:delmer_backend/models/refresh_token_record.dart';
-import 'package:delmer_backend/repositories/favorite_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_category_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_cuisine_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_favorite_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_order_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_product_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_refresh_token_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_restaurant_category_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_restaurant_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_user_repository.dart';
+import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/category.dart';
+import 'package:yumyum_backend/models/order.dart';
+import 'package:yumyum_backend/models/refresh_token_record.dart';
+import 'package:yumyum_backend/repositories/favorite_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_category_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_cuisine_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_favorite_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_order_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_product_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_refresh_token_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_restaurant_category_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_restaurant_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_user_repository.dart';
 import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
 
@@ -40,19 +40,18 @@ void main() {
       '-${counter++}@example.com';
 
   tearDownAll(() async {
-    final conn = await database.connection;
-    await conn.execute("DELETE FROM orders WHERE id LIKE 'itest-%'");
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute("DELETE FROM orders WHERE id LIKE 'itest-%'");
+    await db.execute(
       'DELETE FROM refresh_tokens WHERE user_id IN '
       "(SELECT uid FROM users WHERE email LIKE 'test-%@example.com')",
     );
-    await conn.execute(
+    await db.execute(
       'DELETE FROM favorites WHERE user_id IN '
       "(SELECT uid FROM users WHERE email LIKE 'test-%@example.com')",
     );
-    await conn
-        .execute("DELETE FROM users WHERE email LIKE 'test-%@example.com'");
-    await conn.close();
+    await db.execute("DELETE FROM users WHERE email LIKE 'test-%@example.com'");
+    await db.close();
   });
 
   group('CategoryRepository', () {
@@ -713,8 +712,8 @@ void main() {
         ),
       );
 
-      final conn = await database.connection;
-      await conn.execute(
+      final db = await database.connection;
+      await db.execute(
         Sql.named('DELETE FROM users WHERE uid = @uid'),
         parameters: {'uid': doomed.uid},
       );
@@ -725,8 +724,8 @@ void main() {
 
   group('schema', () {
     test('enforces a unique email', () async {
-      final conn = await database.connection;
-      final result = await conn.execute(
+      final db = await database.connection;
+      final result = await db.execute(
         Sql.named('''
           SELECT indexdef FROM pg_indexes
           WHERE tablename = 'users' AND indexdef LIKE '%email%'
@@ -736,8 +735,8 @@ void main() {
     });
 
     test('indexes orders by user for the listing query', () async {
-      final conn = await database.connection;
-      final result = await conn.execute(
+      final db = await database.connection;
+      final result = await db.execute(
         Sql.named('''
           SELECT indexname FROM pg_indexes
           WHERE tablename = 'orders' AND indexname = @name

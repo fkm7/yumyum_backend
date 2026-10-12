@@ -1,13 +1,13 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:delmer_backend/auth/password_hasher.dart';
-import 'package:delmer_backend/models/password_reset_token.dart';
-import 'package:delmer_backend/models/user.dart';
-import 'package:delmer_backend/repositories/password_reset_token_repository.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
-import 'package:delmer_backend/services/email_service.dart';
-import 'package:delmer_backend/services/session_service.dart';
+import 'package:yumyum_backend/auth/password_hasher.dart';
+import 'package:yumyum_backend/models/password_reset_token.dart';
+import 'package:yumyum_backend/models/user.dart';
+import 'package:yumyum_backend/repositories/password_reset_token_repository.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/email_service.dart';
+import 'package:yumyum_backend/services/session_service.dart';
 import 'package:uuid/uuid.dart';
 
 /// The outcome of confirming a password reset.

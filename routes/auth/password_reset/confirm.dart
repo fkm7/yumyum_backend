@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/services/password_reset_service.dart';
+import 'package:yumyum_backend/services/password_reset_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {

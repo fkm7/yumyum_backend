@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/cuisine.dart';
+import 'package:yumyum_backend/models/cuisine.dart';
 
 /// Read access to the `cuisines` table.
 // ignore: one_member_abstracts

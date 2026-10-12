@@ -1,14 +1,14 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/models/category.dart';
-import 'package:delmer_backend/models/cuisine.dart';
-import 'package:delmer_backend/models/product.dart';
-import 'package:delmer_backend/models/restaurant.dart';
-import 'package:delmer_backend/models/restaurant_category.dart';
-import 'package:delmer_backend/repositories/category_repository.dart';
-import 'package:delmer_backend/repositories/cuisine_repository.dart';
-import 'package:delmer_backend/repositories/product_repository.dart';
-import 'package:delmer_backend/repositories/restaurant_category_repository.dart';
-import 'package:delmer_backend/repositories/restaurant_repository.dart';
+import 'package:yumyum_backend/models/category.dart';
+import 'package:yumyum_backend/models/cuisine.dart';
+import 'package:yumyum_backend/models/product.dart';
+import 'package:yumyum_backend/models/restaurant.dart';
+import 'package:yumyum_backend/models/restaurant_category.dart';
+import 'package:yumyum_backend/repositories/category_repository.dart';
+import 'package:yumyum_backend/repositories/cuisine_repository.dart';
+import 'package:yumyum_backend/repositories/product_repository.dart';
+import 'package:yumyum_backend/repositories/restaurant_category_repository.dart';
+import 'package:yumyum_backend/repositories/restaurant_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 

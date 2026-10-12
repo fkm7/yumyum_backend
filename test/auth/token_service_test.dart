@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-import 'package:delmer_backend/auth/token_service.dart';
+import 'package:yumyum_backend/auth/token_service.dart';
 import 'package:test/test.dart';
 
 const _secret = 'test-secret';

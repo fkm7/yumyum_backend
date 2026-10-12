@@ -1,11 +1,11 @@
-import 'package:delmer_backend/models/address.dart';
-import 'package:delmer_backend/models/cart_item.dart';
-import 'package:delmer_backend/models/category.dart';
-import 'package:delmer_backend/models/cuisine.dart';
-import 'package:delmer_backend/models/product.dart';
-import 'package:delmer_backend/models/restaurant.dart';
-import 'package:delmer_backend/models/restaurant_category.dart';
-import 'package:delmer_backend/services/order_service.dart';
+import 'package:yumyum_backend/models/address.dart';
+import 'package:yumyum_backend/models/cart_item.dart';
+import 'package:yumyum_backend/models/category.dart';
+import 'package:yumyum_backend/models/cuisine.dart';
+import 'package:yumyum_backend/models/product.dart';
+import 'package:yumyum_backend/models/restaurant.dart';
+import 'package:yumyum_backend/models/restaurant_category.dart';
+import 'package:yumyum_backend/services/order_service.dart';
 import 'package:test/test.dart';
 
 const _category = Category(
@@ -97,13 +97,14 @@ void main() {
       test('prices a single line as price * count', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [_product(id: 1, price: 25000)],
           requested: const [CartItem(productId: 1, count: 2)],
         );
@@ -118,13 +119,14 @@ void main() {
       test('gives each line its own total, not the running cart total', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [
             _product(id: 1, price: 25000),
             _product(id: 2, price: 35000),
@@ -152,13 +154,14 @@ void main() {
       test('sums every line into the order cost', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [
             _product(id: 1, price: 25000),
             _product(id: 2, price: 35000),
@@ -175,13 +178,14 @@ void main() {
       test('merges duplicate lines for the same product', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [_product(id: 1)],
           requested: const [
             CartItem(productId: 1, count: 2),
@@ -198,13 +202,14 @@ void main() {
       test('captures the restaurant snapshot and metadata', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [_product(id: 1)],
           requested: const [CartItem(productId: 1, count: 1)],
         );
@@ -225,14 +230,15 @@ void main() {
           _build(
             available: [],
             requested: const [],
-            address: Address(
-                id: '',
-                userId: '',
-                type: '',
-                street: '',
-                city: '',
-                country: '',
-                isDefault: true),
+            address: const Address(
+              id: '',
+              userId: '',
+              type: '',
+              street: '',
+              city: '',
+              country: '',
+              isDefault: true,
+            ),
           ),
           isA<EmptyCart>(),
         );
@@ -243,13 +249,14 @@ void main() {
       test('reports unknown products instead of silently skipping them', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [_product(id: 1)],
           requested: const [
             CartItem(productId: 1, count: 1),
@@ -264,13 +271,14 @@ void main() {
       test('never produces a zero-cost order from unknown products', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [],
           requested: const [CartItem(productId: 999, count: 1)],
         );
@@ -284,13 +292,14 @@ void main() {
       test('rejects products belonging to another restaurant', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [_product(id: 7, restaurantId: 3)],
           requested: const [CartItem(productId: 7, count: 1)],
         );
@@ -343,13 +352,14 @@ void main() {
       test('reports every missing product, not just the first', () {
         final result = _build(
           address: const Address(
-              id: '',
-              userId: '',
-              type: '',
-              street: '',
-              city: '',
-              country: '',
-              isDefault: true),
+            id: '',
+            userId: '',
+            type: '',
+            street: '',
+            city: '',
+            country: '',
+            isDefault: true,
+          ),
           available: [],
           requested: const [
             CartItem(productId: 8, count: 1),

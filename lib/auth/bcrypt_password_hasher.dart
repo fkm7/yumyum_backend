@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:bcrypt/bcrypt.dart';
 import 'package:crypto/crypto.dart';
-import 'package:delmer_backend/auth/password_hasher.dart';
+import 'package:yumyum_backend/auth/password_hasher.dart';
 
 /// The digest format used before bcrypt: unsalted, single-round SHA-256.
 ///

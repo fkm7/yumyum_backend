@@ -1,7 +1,7 @@
-import 'package:delmer_backend/auth/token_service.dart';
-import 'package:delmer_backend/models/refresh_token_record.dart';
-import 'package:delmer_backend/models/user.dart';
-import 'package:delmer_backend/services/session_service.dart';
+import 'package:yumyum_backend/auth/token_service.dart';
+import 'package:yumyum_backend/models/refresh_token_record.dart';
+import 'package:yumyum_backend/models/user.dart';
+import 'package:yumyum_backend/services/session_service.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fakes.dart';
@@ -24,9 +24,9 @@ class _Harness {
   DateTime now = DateTime.utc(2026, 8, 15, 12);
 
   SessionService get service => SessionService(
-        tokens: _tokens,
-        refreshTokens: refreshTokens,
-        users: users,
+        tokenService: _tokens,
+        refreshTokenRepository: refreshTokens,
+        userRepository: users,
         now: () => now,
       );
 

@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/authenticated_user.dart';
-import 'package:delmer_backend/models/payment_method.dart';
-import 'package:delmer_backend/repositories/payment_repository.dart';
+import 'package:yumyum_backend/auth/authenticated_user.dart';
+import 'package:yumyum_backend/models/payment_method.dart';
+import 'package:yumyum_backend/repositories/payment_repository.dart';
 
 FutureOr<Response> onRequest(RequestContext context, String id) async {
   return switch (context.request.method) {

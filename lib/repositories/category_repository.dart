@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/category.dart';
+import 'package:yumyum_backend/models/category.dart';
 
 /// Read access to the `categories` table.
 ///

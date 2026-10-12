@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/payment_method.dart';
+import 'package:yumyum_backend/models/payment_method.dart';
 
 /// Read and write access to the `payment_methods` table.
 abstract class PaymentRepository {
@@ -20,11 +20,11 @@ abstract class PaymentRepository {
   Future<PaymentMethod> create({
     required String userId,
     required String type,
+    required bool isDefault,
     String? brand,
     String? last4,
     int? expiryMonth,
     int? expiryYear,
-    required bool isDefault,
   });
 
   /// Deletes the payment method with the given id.

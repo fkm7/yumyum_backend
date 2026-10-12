@@ -1,7 +1,7 @@
-import 'package:delmer_backend/models/refresh_token_record.dart';
-import 'package:delmer_backend/models/user.dart';
-import 'package:delmer_backend/repositories/refresh_token_repository.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/models/refresh_token_record.dart';
+import 'package:yumyum_backend/models/user.dart';
+import 'package:yumyum_backend/repositories/refresh_token_repository.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
 
 /// An in-memory [RefreshTokenRepository].
 ///
@@ -61,6 +61,16 @@ class InMemoryRefreshTokenRepository implements RefreshTokenRepository {
     }
     return expired.length;
   }
+
+  @override
+  Future<void> revokeAllRefreshTokensForUser(
+    String uid, {
+    required DateTime revokedAt,
+  }) async {
+    for (final record in records.values.toList()) {
+      await revoke(record.id, revokedAt: revokedAt);
+    }
+  }
 }
 
 /// A [UserRepository] that always answers with [user].
@@ -88,4 +98,7 @@ class StubUserRepository implements UserRepository {
 
   @override
   Future<void> updatePasswordHash(String uid, String passwordHash) async {}
+
+  @override
+  Future<void> delete(String uid) async {}
 }

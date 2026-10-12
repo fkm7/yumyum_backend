@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:delmer_backend/services/email_service.dart';
+import 'package:yumyum_backend/services/email_service.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
 
@@ -26,8 +26,9 @@ class SmtpEmailService implements EmailService {
     final username = Platform.environment['SMTP_USERNAME'];
     final password = Platform.environment['SMTP_PASSWORD'];
     final useSsl = Platform.environment['SMTP_USE_SSL'] == 'true';
-    final fromEmail =
-        Platform.environment['SMTP_FROM_EMAIL'] ?? username ?? 'no-reply@delmer.app';
+    final fromEmail = Platform.environment['SMTP_FROM_EMAIL'] ??
+        username ??
+        'no-reply@delmer.app';
     final fromName = Platform.environment['SMTP_FROM_NAME'] ?? 'Delmer';
 
     return SmtpEmailService(

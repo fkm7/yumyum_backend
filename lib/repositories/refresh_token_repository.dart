@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/refresh_token_record.dart';
+import 'package:yumyum_backend/models/refresh_token_record.dart';
 
 /// Read and write access to the `refresh_tokens` table.
 abstract class RefreshTokenRepository {
@@ -41,4 +41,10 @@ abstract class RefreshTokenRepository {
   /// security control; it needs to be run periodically or the table grows
   /// without bound.
   Future<int> deleteExpired(DateTime now);
+
+  /// Revokes every unrevoked token for [uid].
+  Future<void> revokeAllRefreshTokensForUser(
+    String uid, {
+    required DateTime revokedAt,
+  });
 }

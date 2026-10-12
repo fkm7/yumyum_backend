@@ -1,4 +1,6 @@
-import 'package:delmer_backend/models/product.dart';
+import 'package:yumyum_backend/models/address.dart' show Address;
+import 'package:yumyum_backend/models/payment_method.dart' show PaymentMethod;
+import 'package:yumyum_backend/models/product.dart';
 
 /// A line item captured on an order.
 ///
@@ -137,22 +139,22 @@ class Order {
   });
 
   /// Builds an [Order] from a database column map.
-  factory Order.fromRow(Map<String, dynamic> row) {
+  factory Order.fromMap(Map<String, dynamic> map) {
     return Order(
-      id: row['id'] as String,
-      userId: row['user_id'] as String?,
-      cost: (row['cost'] as num).toDouble(),
-      status: row['status'] as String,
-      orderTime: row['order_time'] as DateTime,
-      restaurantInfo: row['restaurant_info'] as Map<String, dynamic>,
-      products: (row['products'] as List<dynamic>)
+      id: map['id'] as String,
+      userId: map['user_id'] as String?,
+      cost: (map['cost'] as num).toDouble(),
+      status: map['status'] as String,
+      orderTime: map['order_time'] as DateTime,
+      restaurantInfo: map['restaurant_info'] as Map<String, dynamic>,
+      products: (map['products'] as List<dynamic>)
           .map((e) => OrderProduct.fromJson(e as Map<String, dynamic>))
           .toList(),
-      addressId: row['address_id'] as String?,
-      deliveryAddress: row['delivery_address'] as Map<String, dynamic>?,
-      courier: row['courier'] as Map<String, dynamic>?,
-      paymentMethodId: row['payment_method_id'] as String?,
-      paymentDetail: row['payment_detail'] as Map<String, dynamic>?,
+      addressId: map['address_id'] as String?,
+      deliveryAddress: map['delivery_address'] as Map<String, dynamic>?,
+      courier: map['courier'] as Map<String, dynamic>?,
+      paymentMethodId: map['payment_method_id'] as String?,
+      paymentDetail: map['payment_detail'] as Map<String, dynamic>?,
     );
   }
 

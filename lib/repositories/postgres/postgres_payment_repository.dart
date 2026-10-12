@@ -1,6 +1,6 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/payment_method.dart';
-import 'package:delmer_backend/repositories/payment_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/payment_method.dart';
+import 'package:yumyum_backend/repositories/payment_repository.dart';
 import 'package:postgres/postgres.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,8 +21,8 @@ class PostgresPaymentRepository implements PaymentRepository {
 
   @override
   Future<List<PaymentMethod>> findByUser(String userId) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named(
         'SELECT $_columns FROM payment_methods WHERE user_id = @user_id '
         'ORDER BY created_at DESC',
@@ -36,8 +36,8 @@ class PostgresPaymentRepository implements PaymentRepository {
 
   @override
   Future<PaymentMethod?> findById(String id) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('SELECT $_columns FROM payment_methods WHERE id = @id'),
       parameters: {'id': id},
     );
@@ -49,16 +49,16 @@ class PostgresPaymentRepository implements PaymentRepository {
   Future<PaymentMethod> create({
     required String userId,
     required String type,
+    required bool isDefault,
     String? brand,
     String? last4,
     int? expiryMonth,
     int? expiryYear,
-    required bool isDefault,
   }) async {
-    final conn = await database.connection;
+    final db = await database.connection;
     final id = _uuid.v4();
 
-    await conn.runTx((session) async {
+    await db.runTx((session) async {
       if (isDefault) {
         await session.execute(
           Sql.named(
@@ -105,8 +105,8 @@ class PostgresPaymentRepository implements PaymentRepository {
 
   @override
   Future<void> delete(String id) async {
-    final conn = await database.connection;
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute(
       Sql.named('DELETE FROM payment_methods WHERE id = @id'),
       parameters: {'id': id},
     );

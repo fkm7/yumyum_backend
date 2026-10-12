@@ -1,8 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
-import 'package:delmer_backend/auth/password_hasher.dart';
-import 'package:delmer_backend/models/user.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
+import 'package:yumyum_backend/auth/password_hasher.dart';
+import 'package:yumyum_backend/models/user.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:delmer_backend/services/email_service.dart';
+import 'package:yumyum_backend/services/email_service.dart';
 
 /// Logs the reset link to stdout instead of sending a real email.
 ///

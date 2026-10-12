@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/password_reset_token.dart';
+import 'package:yumyum_backend/models/password_reset_token.dart';
 
 /// Read and write access to the `password_reset_tokens` table.
 abstract class PasswordResetTokenRepository {

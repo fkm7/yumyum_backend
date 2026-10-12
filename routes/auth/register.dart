@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/password_hasher.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
-import 'package:delmer_backend/services/session_service.dart';
+import 'package:yumyum_backend/auth/password_hasher.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/session_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {

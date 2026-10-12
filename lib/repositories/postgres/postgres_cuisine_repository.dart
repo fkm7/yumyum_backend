@@ -1,6 +1,6 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/cuisine.dart';
-import 'package:delmer_backend/repositories/cuisine_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/cuisine.dart';
+import 'package:yumyum_backend/repositories/cuisine_repository.dart';
 
 /// PostgreSQL-backed [CuisineRepository].
 class PostgresCuisineRepository implements CuisineRepository {
@@ -12,8 +12,8 @@ class PostgresCuisineRepository implements CuisineRepository {
 
   @override
   Future<List<Cuisine>> findAll() async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       'SELECT id, title_en, title_ru, title_uz, icon FROM cuisines '
       'ORDER BY id',
     );

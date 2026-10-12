@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/category.dart';
+import 'package:yumyum_backend/models/category.dart';
 
 /// A model class representing a product on a restaurant's menu.
 class Product {

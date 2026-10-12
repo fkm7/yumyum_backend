@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/authenticated_user.dart';
-import 'package:delmer_backend/repositories/payment_repository.dart';
+import 'package:yumyum_backend/auth/authenticated_user.dart';
+import 'package:yumyum_backend/repositories/payment_repository.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   return switch (context.request.method) {
@@ -14,8 +14,7 @@ FutureOr<Response> onRequest(RequestContext context) async {
 
 Future<Response> _list(RequestContext context) async {
   final user = context.read<AuthenticatedUser>();
-  final methods =
-      await context.read<PaymentRepository>().findByUser(user.uid);
+  final methods = await context.read<PaymentRepository>().findByUser(user.uid);
   return Response.json(body: methods.map((m) => m.toJson()).toList());
 }
 

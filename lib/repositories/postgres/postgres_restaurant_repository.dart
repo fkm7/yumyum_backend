@@ -1,6 +1,6 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/restaurant.dart';
-import 'package:delmer_backend/repositories/restaurant_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/restaurant.dart';
+import 'package:yumyum_backend/repositories/restaurant_repository.dart';
 import 'package:postgres/postgres.dart';
 
 // product_categories stores a JSONB array of category ids (e.g. `[1, 2]`);
@@ -56,8 +56,8 @@ class PostgresRestaurantRepository implements RestaurantRepository {
 
   @override
   Future<List<Restaurant>> findAll() async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       'SELECT $_columns FROM $_from ORDER BY r.id',
     );
     return _map(result);
@@ -65,8 +65,8 @@ class PostgresRestaurantRepository implements RestaurantRepository {
 
   @override
   Future<List<Restaurant>> findByCuisine(int cuisineId) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named(
         'SELECT $_columns FROM $_from WHERE r.cuisine = @cuisine '
         'ORDER BY r.id',
@@ -78,8 +78,8 @@ class PostgresRestaurantRepository implements RestaurantRepository {
 
   @override
   Future<List<Restaurant>> findByCategory(int categoryId) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named(
         'SELECT $_columns FROM $_from WHERE r.category = @category '
         'ORDER BY r.id',
@@ -91,8 +91,8 @@ class PostgresRestaurantRepository implements RestaurantRepository {
 
   @override
   Future<Restaurant?> findById(int id) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('SELECT $_columns FROM $_from WHERE r.id = @id'),
       parameters: {'id': id},
     );
@@ -103,8 +103,8 @@ class PostgresRestaurantRepository implements RestaurantRepository {
   @override
   Future<List<Restaurant>> findByIds(List<int> ids) async {
     if (ids.isEmpty) return [];
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('SELECT $_columns FROM $_from WHERE r.id = ANY(@ids)'),
       parameters: {'ids': TypedValue(Type.integerArray, ids)},
     );

@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/authenticated_user.dart';
-import 'package:delmer_backend/auth/password_hasher.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
-import 'package:delmer_backend/services/session_service.dart';
+import 'package:yumyum_backend/auth/authenticated_user.dart';
+import 'package:yumyum_backend/auth/password_hasher.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/session_service.dart';
 
 /// Sits under `routes/auth/`, so `authMiddleware` (applied by that
 /// tree's `_middleware.dart`) already guarantees a valid access token.
