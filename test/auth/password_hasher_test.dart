@@ -1,4 +1,4 @@
-import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
+import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
 import 'package:test/test.dart';
 
 void main() {

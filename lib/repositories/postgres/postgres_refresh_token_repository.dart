@@ -1,6 +1,6 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/refresh_token_record.dart';
-import 'package:delmer_backend/repositories/refresh_token_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/refresh_token_record.dart';
+import 'package:yumyum_backend/repositories/refresh_token_repository.dart';
 import 'package:postgres/postgres.dart';
 
 const _columns = '''
@@ -17,8 +17,8 @@ class PostgresRefreshTokenRepository implements RefreshTokenRepository {
 
   @override
   Future<void> issue(RefreshTokenRecord record) async {
-    final conn = await database.connection;
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute(
       Sql.named('''
         INSERT INTO refresh_tokens
           (id, user_id, family_id, issued_at, expires_at, revoked_at,
@@ -38,8 +38,8 @@ class PostgresRefreshTokenRepository implements RefreshTokenRepository {
 
   @override
   Future<RefreshTokenRecord?> findById(String id) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('SELECT $_columns FROM refresh_tokens WHERE id = @id'),
       parameters: {'id': id},
     );
@@ -53,10 +53,10 @@ class PostgresRefreshTokenRepository implements RefreshTokenRepository {
     required DateTime revokedAt,
     String? replacedBy,
   }) async {
-    final conn = await database.connection;
+    final db = await database.connection;
     // `revoked_at IS NULL` keeps the first revocation's timestamp rather than
     // letting a later call move it forward.
-    await conn.execute(
+    await db.execute(
       Sql.named('''
         UPDATE refresh_tokens
         SET revoked_at = @revoked_at, replaced_by = @replaced_by
@@ -75,8 +75,8 @@ class PostgresRefreshTokenRepository implements RefreshTokenRepository {
     String familyId, {
     required DateTime revokedAt,
   }) async {
-    final conn = await database.connection;
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute(
       Sql.named('''
         UPDATE refresh_tokens
         SET revoked_at = @revoked_at
@@ -88,11 +88,27 @@ class PostgresRefreshTokenRepository implements RefreshTokenRepository {
 
   @override
   Future<int> deleteExpired(DateTime now) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('DELETE FROM refresh_tokens WHERE expires_at < @now'),
       parameters: {'now': now},
     );
     return result.affectedRows;
+  }
+
+  @override
+  Future<void> revokeAllRefreshTokensForUser(
+    String uid, {
+    required DateTime revokedAt,
+  }) async {
+    final db = await database.connection;
+    await db.execute(
+      Sql.named('''
+        UPDATE refresh_tokens
+        SET revoked_at = @revoked_at
+        WHERE user_id = @user_id AND revoked_at IS NULL
+      '''),
+      parameters: {'user_id': uid, 'revoked_at': revokedAt},
+    );
   }
 }

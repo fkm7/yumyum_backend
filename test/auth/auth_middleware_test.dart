@@ -1,6 +1,6 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/authenticated_user.dart';
-import 'package:delmer_backend/auth/token_service.dart';
+import 'package:yumyum_backend/auth/authenticated_user.dart';
+import 'package:yumyum_backend/auth/token_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 

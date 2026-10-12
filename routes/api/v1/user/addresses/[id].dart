@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/authenticated_user.dart';
-import 'package:delmer_backend/models/address.dart';
-import 'package:delmer_backend/repositories/address_repository.dart';
+import 'package:yumyum_backend/auth/authenticated_user.dart';
+import 'package:yumyum_backend/models/address.dart';
+import 'package:yumyum_backend/repositories/address_repository.dart';
 
 FutureOr<Response> onRequest(RequestContext context, String id) async {
   return switch (context.request.method) {

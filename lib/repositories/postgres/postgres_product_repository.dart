@@ -1,6 +1,6 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/product.dart';
-import 'package:delmer_backend/repositories/product_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/product.dart';
+import 'package:yumyum_backend/repositories/product_repository.dart';
 import 'package:postgres/postgres.dart';
 
 const _columns = '''
@@ -23,8 +23,8 @@ class PostgresProductRepository implements ProductRepository {
 
   @override
   Future<List<Product>> findAll() async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       'SELECT $_columns FROM $_from ORDER BY p.id',
     );
     return _map(result);
@@ -32,8 +32,8 @@ class PostgresProductRepository implements ProductRepository {
 
   @override
   Future<Product?> findById(int id) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('SELECT $_columns FROM $_from WHERE p.id = @id'),
       parameters: {'id': id},
     );
@@ -43,8 +43,8 @@ class PostgresProductRepository implements ProductRepository {
 
   @override
   Future<List<Product>> findByRestaurant(int restaurantId) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named(
         'SELECT $_columns FROM $_from WHERE p.restaurant_id = @id '
         'ORDER BY p.id',
@@ -57,10 +57,10 @@ class PostgresProductRepository implements ProductRepository {
   @override
   Future<List<Product>> findByIds(List<int> ids) async {
     if (ids.isEmpty) return [];
-    final conn = await database.connection;
+    final db = await database.connection;
     // ANY(@ids) keeps this a single round trip and a single prepared
     // statement regardless of cart size, instead of one SELECT per line.
-    final result = await conn.execute(
+    final result = await db.execute(
       Sql.named('SELECT $_columns FROM $_from WHERE p.id = ANY(@ids)'),
       parameters: {'ids': TypedValue(Type.integerArray, ids)},
     );

@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/restaurant.dart';
+import 'package:yumyum_backend/models/restaurant.dart';
 
 /// Read access to the `restaurants` table.
 abstract class RestaurantRepository {

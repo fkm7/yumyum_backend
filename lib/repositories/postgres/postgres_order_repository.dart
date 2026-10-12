@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/order.dart';
-import 'package:delmer_backend/repositories/order_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/order.dart';
+import 'package:yumyum_backend/repositories/order_repository.dart';
 import 'package:postgres/postgres.dart';
 
 const _columns = '''
@@ -20,32 +20,32 @@ class PostgresOrderRepository implements OrderRepository {
 
   @override
   Future<List<Order>> findByUser(String userId) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named(
         'SELECT $_columns FROM orders WHERE user_id = @user_id '
         'ORDER BY order_time DESC',
       ),
       parameters: {'user_id': userId},
     );
-    return result.map((row) => Order.fromRow(row.toColumnMap())).toList();
+    return result.map((row) => Order.fromMap(row.toColumnMap())).toList();
   }
 
   @override
   Future<Order?> findById(String id) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('SELECT $_columns FROM orders WHERE id = @id'),
       parameters: {'id': id},
     );
     if (result.isEmpty) return null;
-    return Order.fromRow(result.first.toColumnMap());
+    return Order.fromMap(result.first.toColumnMap());
   }
 
   @override
   Future<Order> create(Order order) async {
-    final conn = await database.connection;
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute(
       Sql.named('''
         INSERT INTO orders
           (id, user_id, cost, status, order_time, restaurant_info, products,

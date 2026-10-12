@@ -44,7 +44,7 @@ class DatabaseService {
     return Endpoint(
       host: uri.host,
       port: uri.hasPort ? uri.port : 5432,
-      database: uri.path.isEmpty ? 'delmer_backend' : uri.path.substring(1),
+      database: uri.path.isEmpty ? 'yumyum_backend' : uri.path.substring(1),
       username: userInfo.isNotEmpty && userInfo.first.isNotEmpty
           ? Uri.decodeComponent(userInfo.first)
           : 'farrukh',

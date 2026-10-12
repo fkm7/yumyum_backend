@@ -1,5 +1,5 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/token_service.dart';
+import 'package:yumyum_backend/auth/token_service.dart';
 
 /// The identity established by [authMiddleware] for the current request.
 class AuthenticatedUser {

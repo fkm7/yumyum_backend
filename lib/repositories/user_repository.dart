@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/user.dart';
+import 'package:yumyum_backend/models/user.dart';
 
 /// Read and write access to the `users` table.
 abstract class UserRepository {
@@ -28,4 +28,7 @@ abstract class UserRepository {
   /// Used to upgrade a credential in place after a successful login against an
   /// outdated digest, which is the only moment the plaintext is available.
   Future<void> updatePasswordHash(String uid, String passwordHash);
+
+  /// Deletes the user with the given uid.
+  Future<void> delete(String uid) async {}
 }

@@ -1,3 +1,6 @@
+import 'package:yumyum_backend/models/address.dart' show Address;
+import 'package:yumyum_backend/models/order.dart' show Order;
+
 /// A model class representing a user's saved payment method.
 ///
 /// No card number or CVV is ever held here — only display fields. A real
@@ -10,11 +13,11 @@ class PaymentMethod {
     required this.id,
     required this.userId,
     required this.type,
+    required this.isDefault,
     this.brand,
     this.last4,
     this.expiryMonth,
     this.expiryYear,
-    required this.isDefault,
   });
 
   /// Builds a [PaymentMethod] from a database column map.

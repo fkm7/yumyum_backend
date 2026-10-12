@@ -1,19 +1,19 @@
 import 'dart:convert';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/auth/authenticated_user.dart';
-import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
-import 'package:delmer_backend/auth/password_hasher.dart';
-import 'package:delmer_backend/auth/token_service.dart';
-import 'package:delmer_backend/repositories/category_repository.dart';
-import 'package:delmer_backend/repositories/cuisine_repository.dart';
-import 'package:delmer_backend/repositories/favorite_repository.dart';
-import 'package:delmer_backend/repositories/order_repository.dart';
-import 'package:delmer_backend/repositories/product_repository.dart';
-import 'package:delmer_backend/repositories/restaurant_category_repository.dart';
-import 'package:delmer_backend/repositories/restaurant_repository.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
-import 'package:delmer_backend/services/session_service.dart';
+import 'package:yumyum_backend/auth/authenticated_user.dart';
+import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
+import 'package:yumyum_backend/auth/password_hasher.dart';
+import 'package:yumyum_backend/auth/token_service.dart';
+import 'package:yumyum_backend/repositories/category_repository.dart';
+import 'package:yumyum_backend/repositories/cuisine_repository.dart';
+import 'package:yumyum_backend/repositories/favorite_repository.dart';
+import 'package:yumyum_backend/repositories/order_repository.dart';
+import 'package:yumyum_backend/repositories/product_repository.dart';
+import 'package:yumyum_backend/repositories/restaurant_category_repository.dart';
+import 'package:yumyum_backend/repositories/restaurant_repository.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/session_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
@@ -76,9 +76,9 @@ class TestContext {
     provide<PasswordHasher>(testHasher);
     provide<SessionService>(
       SessionService(
-        tokens: testTokens,
-        refreshTokens: refreshTokens,
-        users: StubUserRepository(),
+        tokenService: testTokens,
+        refreshTokenRepository: refreshTokens,
+        userRepository: StubUserRepository(),
       ),
     );
   }

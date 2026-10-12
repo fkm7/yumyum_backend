@@ -1,6 +1,6 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/user.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/user.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
 import 'package:postgres/postgres.dart';
 import 'package:uuid/uuid.dart';
 
@@ -20,8 +20,8 @@ class PostgresUserRepository implements UserRepository {
 
   @override
   Future<User?> findByEmail(String email) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('''
         SELECT uid, first_name, last_name, email, password_hash, photo_url
         FROM users WHERE email = @email
@@ -34,8 +34,8 @@ class PostgresUserRepository implements UserRepository {
 
   @override
   Future<User?> findByUid(String uid) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('''
         SELECT uid, first_name, last_name, email, photo_url
         FROM users WHERE uid = @uid
@@ -53,9 +53,9 @@ class PostgresUserRepository implements UserRepository {
     required String email,
     required String passwordHash,
   }) async {
-    final conn = await database.connection;
+    final db = await database.connection;
     try {
-      final result = await conn.execute(
+      final result = await db.execute(
         Sql.named('''
           INSERT INTO users
             (uid, first_name, last_name, email, password_hash, photo_url)
@@ -81,12 +81,21 @@ class PostgresUserRepository implements UserRepository {
 
   @override
   Future<void> updatePasswordHash(String uid, String passwordHash) async {
-    final conn = await database.connection;
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute(
       Sql.named(
         'UPDATE users SET password_hash = @password_hash WHERE uid = @uid',
       ),
       parameters: {'uid': uid, 'password_hash': passwordHash},
+    );
+  }
+
+  @override
+  Future<void> delete(String uid) async {
+    final db = await database.connection;
+    await db.execute(
+      Sql.named('DELETE FROM users WHERE uid = @uid'),
+      parameters: {'uid': uid},
     );
   }
 }

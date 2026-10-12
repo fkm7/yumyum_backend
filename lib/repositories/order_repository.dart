@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/order.dart';
+import 'package:yumyum_backend/models/order.dart';
 
 /// Read and write access to the `orders` table.
 abstract class OrderRepository {

@@ -1,5 +1,5 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:delmer_backend/middleware/error_handler.dart';
+import 'package:yumyum_backend/middleware/error_handler.dart';
 import 'package:test/test.dart';
 
 import '../helpers/test_context.dart';

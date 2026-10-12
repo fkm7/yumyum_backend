@@ -1,9 +1,9 @@
-import 'package:delmer_backend/models/address.dart';
-import 'package:delmer_backend/models/cart_item.dart';
-import 'package:delmer_backend/models/order.dart';
-import 'package:delmer_backend/models/payment_method.dart';
-import 'package:delmer_backend/models/product.dart';
-import 'package:delmer_backend/models/restaurant.dart';
+import 'package:yumyum_backend/models/address.dart';
+import 'package:yumyum_backend/models/cart_item.dart';
+import 'package:yumyum_backend/models/order.dart';
+import 'package:yumyum_backend/models/payment_method.dart';
+import 'package:yumyum_backend/models/product.dart';
+import 'package:yumyum_backend/models/restaurant.dart';
 
 /// The outcome of building an order from a cart.
 ///

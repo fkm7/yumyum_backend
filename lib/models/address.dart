@@ -1,3 +1,5 @@
+import 'package:yumyum_backend/models/order.dart' show Order;
+
 /// A model class representing a user's saved delivery address.
 class Address {
   /// Constructs an [Address] with the given properties.
@@ -5,13 +7,13 @@ class Address {
     required this.id,
     required this.userId,
     required this.type,
-    this.label,
     required this.street,
     required this.city,
     required this.country,
+    required this.isDefault,
+    this.label,
     this.latitude,
     this.longitude,
-    required this.isDefault,
   });
 
   /// Builds an [Address] from a database column map.

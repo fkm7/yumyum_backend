@@ -1,33 +1,33 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:delmer_backend/auth/bcrypt_password_hasher.dart';
-import 'package:delmer_backend/auth/password_hasher.dart';
-import 'package:delmer_backend/auth/token_service.dart';
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/middleware/error_handler.dart';
-import 'package:delmer_backend/repositories/address_repository.dart';
-import 'package:delmer_backend/repositories/category_repository.dart';
-import 'package:delmer_backend/repositories/cuisine_repository.dart';
-import 'package:delmer_backend/repositories/favorite_repository.dart';
-import 'package:delmer_backend/repositories/order_repository.dart';
-import 'package:delmer_backend/repositories/payment_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_address_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_category_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_cuisine_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_favorite_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_order_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_payment_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_product_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_refresh_token_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_restaurant_category_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_restaurant_repository.dart';
-import 'package:delmer_backend/repositories/postgres/postgres_user_repository.dart';
-import 'package:delmer_backend/repositories/product_repository.dart';
-import 'package:delmer_backend/repositories/refresh_token_repository.dart';
-import 'package:delmer_backend/repositories/restaurant_category_repository.dart';
-import 'package:delmer_backend/repositories/restaurant_repository.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
-import 'package:delmer_backend/services/session_service.dart';
+import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
+import 'package:yumyum_backend/auth/password_hasher.dart';
+import 'package:yumyum_backend/auth/token_service.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/middleware/error_handler.dart';
+import 'package:yumyum_backend/repositories/address_repository.dart';
+import 'package:yumyum_backend/repositories/category_repository.dart';
+import 'package:yumyum_backend/repositories/cuisine_repository.dart';
+import 'package:yumyum_backend/repositories/favorite_repository.dart';
+import 'package:yumyum_backend/repositories/order_repository.dart';
+import 'package:yumyum_backend/repositories/payment_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_address_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_category_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_cuisine_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_favorite_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_order_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_payment_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_product_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_refresh_token_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_restaurant_category_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_restaurant_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_user_repository.dart';
+import 'package:yumyum_backend/repositories/product_repository.dart';
+import 'package:yumyum_backend/repositories/refresh_token_repository.dart';
+import 'package:yumyum_backend/repositories/restaurant_category_repository.dart';
+import 'package:yumyum_backend/repositories/restaurant_repository.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/session_service.dart';
 
 // `middleware` runs once when the pipeline is built, so these are constructed
 // a single time and shared. The repositories are stateless wrappers around the
@@ -47,9 +47,9 @@ final _addresses = PostgresAddressRepository(_database);
 final _payments = PostgresPaymentRepository(_database);
 final _refreshTokens = PostgresRefreshTokenRepository(_database);
 final _sessions = SessionService(
-  tokens: _tokens,
-  refreshTokens: _refreshTokens,
-  users: _users,
+  tokenService: _tokens,
+  refreshTokenRepository: _refreshTokens,
+  userRepository: _users,
 );
 
 Handler middleware(Handler handler) {

@@ -1,6 +1,6 @@
-import 'package:delmer_backend/models/category.dart';
-import 'package:delmer_backend/models/cuisine.dart';
-import 'package:delmer_backend/models/restaurant_category.dart';
+import 'package:yumyum_backend/models/category.dart';
+import 'package:yumyum_backend/models/cuisine.dart';
+import 'package:yumyum_backend/models/restaurant_category.dart';
 
 /// A model class representing a restaurant.
 class Restaurant {

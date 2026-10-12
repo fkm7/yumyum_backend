@@ -1,6 +1,6 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/models/restaurant_category.dart';
-import 'package:delmer_backend/repositories/restaurant_category_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/models/restaurant_category.dart';
+import 'package:yumyum_backend/repositories/restaurant_category_repository.dart';
 
 /// PostgreSQL-backed [RestaurantCategoryRepository].
 class PostgresRestaurantCategoryRepository
@@ -14,8 +14,8 @@ class PostgresRestaurantCategoryRepository
 
   @override
   Future<List<RestaurantCategory>> findAll() async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       'SELECT id, title_en, title_ru, title_uz, icon FROM '
       'restaurant_categories ORDER BY id',
     );

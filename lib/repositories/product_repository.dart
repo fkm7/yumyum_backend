@@ -1,4 +1,4 @@
-import 'package:delmer_backend/models/product.dart';
+import 'package:yumyum_backend/models/product.dart';
 
 /// Read access to the `products` table.
 abstract class ProductRepository {

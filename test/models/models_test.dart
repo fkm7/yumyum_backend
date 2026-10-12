@@ -1,10 +1,10 @@
-import 'package:delmer_backend/models/cart_item.dart';
-import 'package:delmer_backend/models/category.dart';
-import 'package:delmer_backend/models/order.dart';
-import 'package:delmer_backend/models/product.dart';
-import 'package:delmer_backend/models/refresh_token_record.dart';
-import 'package:delmer_backend/models/restaurant.dart';
-import 'package:delmer_backend/models/user.dart';
+import 'package:yumyum_backend/models/cart_item.dart';
+import 'package:yumyum_backend/models/category.dart';
+import 'package:yumyum_backend/models/order.dart';
+import 'package:yumyum_backend/models/product.dart';
+import 'package:yumyum_backend/models/refresh_token_record.dart';
+import 'package:yumyum_backend/models/restaurant.dart';
+import 'package:yumyum_backend/models/user.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -344,13 +344,13 @@ void main() {
 
     test('serialises order_time as ISO-8601', () {
       expect(
-        Order.fromRow(row).toJson()['order_time'],
+        Order.fromMap(row).toJson()['order_time'],
         equals('2026-08-15T12:00:00.000Z'),
       );
     });
 
     test('reads persisted line items back', () {
-      final order = Order.fromRow(row);
+      final order = Order.fromMap(row);
       expect(order.products.single.count, equals(2));
       expect(order.products.single.subTotal, equals(50000.0));
     });
@@ -358,7 +358,7 @@ void main() {
     // Orders created before user attribution existed have a null user_id and
     // must still read back rather than throwing.
     test('tolerates a legacy row with no user_id', () {
-      final order = Order.fromRow({...row, 'user_id': null});
+      final order = Order.fromMap({...row, 'user_id': null});
       expect(order.userId, isNull);
     });
 

@@ -1,7 +1,7 @@
-import 'package:delmer_backend/auth/token_service.dart';
-import 'package:delmer_backend/models/refresh_token_record.dart';
-import 'package:delmer_backend/repositories/refresh_token_repository.dart';
-import 'package:delmer_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/auth/token_service.dart';
+import 'package:yumyum_backend/models/refresh_token_record.dart';
+import 'package:yumyum_backend/repositories/refresh_token_repository.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
 import 'package:uuid/uuid.dart';
 
 /// A freshly issued access/refresh pair.
@@ -81,19 +81,19 @@ class SessionService {
   ///
   /// [now] is injectable so that expiry behaviour is testable without waiting.
   SessionService({
-    required TokenService tokens,
-    required RefreshTokenRepository refreshTokens,
-    required UserRepository users,
+    required TokenService tokenService,
+    required RefreshTokenRepository refreshTokenRepository,
+    required UserRepository userRepository,
     Uuid uuid = const Uuid(),
     DateTime Function() now = DateTime.now,
-  })  : _tokens = tokens,
-        _refreshTokens = refreshTokens,
-        _users = users,
+  })  : _tokens = tokenService,
+        _refreshTokenRepository = refreshTokenRepository,
+        _users = userRepository,
         _uuid = uuid,
         _now = now;
 
   final TokenService _tokens;
-  final RefreshTokenRepository _refreshTokens;
+  final RefreshTokenRepository _refreshTokenRepository;
   final UserRepository _users;
   final Uuid _uuid;
   final DateTime Function() _now;
@@ -106,7 +106,7 @@ class SessionService {
     final claims = _tokens.verifyRefreshToken(presentedToken);
     if (claims == null) return const RefreshRejected();
 
-    final record = await _refreshTokens.findById(claims.tokenId);
+    final record = await _refreshTokenRepository.findById(claims.tokenId);
     if (record == null) return const RefreshRejected();
 
     // The signature proves the server issued the token, but not that it was
@@ -119,7 +119,8 @@ class SessionService {
       // Rotation means the rightful holder already exchanged this token and
       // dropped it. Seeing it again means a copy is in circulation, so the
       // successor tokens go too.
-      await _refreshTokens.revokeFamily(record.familyId, revokedAt: now);
+      await _refreshTokenRepository.revokeFamily(record.familyId,
+          revokedAt: now);
       return RefreshReuseDetected(record.familyId);
     }
 
@@ -145,12 +146,13 @@ class SessionService {
     final claims = _tokens.verifyRefreshToken(presentedToken);
     if (claims == null) return;
 
-    final record = await _refreshTokens.findById(claims.tokenId);
+    final record = await _refreshTokenRepository.findById(claims.tokenId);
     if (record == null || record.userId != claims.uid) return;
 
     // The whole family, not just this token: logging out should not leave a
     // rotated successor usable.
-    await _refreshTokens.revokeFamily(record.familyId, revokedAt: _now());
+    await _refreshTokenRepository.revokeFamily(record.familyId,
+        revokedAt: _now());
   }
 
   Future<TokenPair> _issue(
@@ -162,7 +164,7 @@ class SessionService {
     final tokenId = _uuid.v4();
     final refreshTokenExpiresAt = now.add(_tokens.refreshTokenExpiresIn);
 
-    await _refreshTokens.issue(
+    await _refreshTokenRepository.issue(
       RefreshTokenRecord(
         id: tokenId,
         userId: uid,
@@ -175,7 +177,7 @@ class SessionService {
     // Revoked after the successor is stored: if issuing fails, the caller
     // keeps a working token rather than being locked out.
     if (replaces != null) {
-      await _refreshTokens.revoke(
+      await _refreshTokenRepository.revoke(
         replaces,
         revokedAt: now,
         replacedBy: tokenId,
@@ -187,6 +189,15 @@ class SessionService {
       refreshToken: _tokens.generateRefreshToken(uid, tokenId: tokenId),
       accessTokenExpiresAt: now.add(_tokens.accessTokenExpiresIn),
       refreshTokenExpiresAt: refreshTokenExpiresAt,
+    );
+  }
+
+  /// Revokes all reset tokens for the user with [uid].
+  Future<void> revokeAllResetTokens(String uid) async {
+    final now = _now();
+    await _refreshTokenRepository.revokeAllRefreshTokensForUser(
+      uid,
+      revokedAt: now,
     );
   }
 }

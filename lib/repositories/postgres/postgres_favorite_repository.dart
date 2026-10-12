@@ -1,5 +1,5 @@
-import 'package:delmer_backend/db/database_service.dart';
-import 'package:delmer_backend/repositories/favorite_repository.dart';
+import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/repositories/favorite_repository.dart';
 import 'package:postgres/postgres.dart';
 
 /// PostgreSQL-backed [FavoriteRepository].
@@ -12,8 +12,8 @@ class PostgresFavoriteRepository implements FavoriteRepository {
 
   @override
   Future<void> add(String userId, FavoriteType type, int itemId) async {
-    final conn = await database.connection;
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute(
       Sql.named('''
         INSERT INTO favorites (user_id, item_type, item_id, created_at)
         VALUES (@user_id, @item_type, @item_id, @created_at)
@@ -30,8 +30,8 @@ class PostgresFavoriteRepository implements FavoriteRepository {
 
   @override
   Future<void> remove(String userId, FavoriteType type, int itemId) async {
-    final conn = await database.connection;
-    await conn.execute(
+    final db = await database.connection;
+    await db.execute(
       Sql.named('''
         DELETE FROM favorites
         WHERE user_id = @user_id AND item_type = @item_type
@@ -47,8 +47,8 @@ class PostgresFavoriteRepository implements FavoriteRepository {
 
   @override
   Future<List<int>> findIds(String userId, FavoriteType type) async {
-    final conn = await database.connection;
-    final result = await conn.execute(
+    final db = await database.connection;
+    final result = await db.execute(
       Sql.named('''
         SELECT item_id FROM favorites
         WHERE user_id = @user_id AND item_type = @item_type
