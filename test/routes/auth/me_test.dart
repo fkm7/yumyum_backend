@@ -1,11 +1,12 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/token_service.dart';
-import 'package:yumyum_backend/models/user.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
-import '../../../routes/auth/me.dart' as route;
+import 'package:yumyum_backend/auth/token_service.dart';
+import 'package:yumyum_backend/models/user.dart';
+import 'package:yumyum_backend/repositories/user_repository.dart';
+
+import '../../../routes/api/v1/user/me/index.dart' as route;
 import '../../helpers/test_context.dart';
 
 const _user = User(

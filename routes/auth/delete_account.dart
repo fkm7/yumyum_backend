@@ -1,9 +1,9 @@
 import 'package:dart_frog/dart_frog.dart';
 
 import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/auth/password_hasher.dart';
 import 'package:yumyum_backend/auth/token_service.dart';
 import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/account_deletion_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.delete) {
@@ -31,29 +31,22 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final userRepository = context.read<UserRepository>();
-  final authenticatedUser = context.read<AuthenticatedUser>();
-  final hasher = context.read<PasswordHasher>();
-
-  final account = await userRepository.findByUid(authenticatedUser.uid);
+  final account = await context.read<UserRepository>().findByUid(uid);
   if (account == null) {
     // Already gone (e.g. a retried request, or deleted via the web page in
     // another tab) — deletion is idempotent from the caller's perspective.
     return Response(statusCode: 204);
   }
 
-  // findByUid deliberately omits the password hash (see UserRepository docs),
-  // so it's fetched again via email, matching the pattern login.dart uses.
-  final withHash = await userRepository.findByEmail(account.email);
-  final storedHash = withHash?.passwordHash;
-  if (storedHash == null || !hasher.verify(password, storedHash)) {
-    return Response.json(
-      statusCode: 401,
-      body: {'error': 'Incorrect password'},
-    );
-  }
+  final result = await context
+      .read<AccountDeletionService>()
+      .deleteByUid(uid: uid, password: password);
 
-  await userRepository.delete(authenticatedUser.uid);
-
-  return Response(statusCode: 204);
+  return switch (result) {
+    AccountDeleted() => Response(statusCode: 204),
+    AccountCredentialsRejected() => Response.json(
+        statusCode: 401,
+        body: {'error': 'Incorrect password'},
+      ),
+  };
 }

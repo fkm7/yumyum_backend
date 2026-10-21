@@ -2,12 +2,13 @@
 library;
 
 import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
-import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/core/db/database_service.dart';
 import 'package:yumyum_backend/models/category.dart';
 import 'package:yumyum_backend/models/order.dart';
 import 'package:yumyum_backend/models/refresh_token_record.dart';
 import 'package:yumyum_backend/repositories/favorite_repository.dart';
 import 'package:yumyum_backend/repositories/postgres/postgres_category_repository.dart';
+import 'package:yumyum_backend/repositories/postgres/postgres_auth_repository.dart';
 import 'package:yumyum_backend/repositories/postgres/postgres_cuisine_repository.dart';
 import 'package:yumyum_backend/repositories/postgres/postgres_favorite_repository.dart';
 import 'package:yumyum_backend/repositories/postgres/postgres_order_repository.dart';
@@ -19,8 +20,8 @@ import 'package:yumyum_backend/repositories/postgres/postgres_user_repository.da
 import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
 
-/// These run against a real PostgreSQL seeded from `lib/db/schema.sql`
-/// (`docker compose up -d`). They exist to verify the things a mocked
+/// These run against a real PostgreSQL migrated and seeded with
+/// `dart run bin/migrate.dart --seed` (after `docker compose up -d`). They exist to verify the things a mocked
 /// repository can never catch: column names, and how the driver maps
 /// PostgreSQL types onto Dart ones.
 void main() {
@@ -31,6 +32,7 @@ void main() {
   final restaurants = PostgresRestaurantRepository(database);
   final products = PostgresProductRepository(database);
   final users = PostgresUserRepository(database);
+  final credentials = PostgresAuthRepository(database);
   final orders = PostgresOrderRepository(database);
   final favorites = PostgresFavoriteRepository(database);
   final refreshTokens = PostgresRefreshTokenRepository(database);
@@ -197,10 +199,10 @@ void main() {
     });
   });
 
-  group('UserRepository', () {
-    test('creates a user and reads it back', () async {
+  group('CredentialRepository', () {
+    test('creates an account and reads its profile back', () async {
       final email = uniqueEmail();
-      final created = await users.create(
+      final created = await credentials.createAccount(
         firstName: 'Ada',
         lastName: 'Lovelace',
         email: email,
@@ -216,7 +218,7 @@ void main() {
     });
 
     test('assigns a uid that is not a timestamp', () async {
-      final created = await users.create(
+      final created = await credentials.createAccount(
         firstName: 'Ada',
         lastName: 'Lovelace',
         email: uniqueEmail(),
@@ -231,13 +233,13 @@ void main() {
     // against a live server.
     test('returns null rather than throwing on a duplicate email', () async {
       final email = uniqueEmail();
-      final first = await users.create(
+      final first = await credentials.createAccount(
         firstName: 'Ada',
         lastName: 'Lovelace',
         email: email,
         passwordHash: 'digest',
       );
-      final second = await users.create(
+      final second = await credentials.createAccount(
         firstName: 'Someone',
         lastName: 'Else',
         email: email,
@@ -248,56 +250,46 @@ void main() {
       expect(second, isNull);
     });
 
-    test('findByEmail carries the password hash', () async {
+    test('finds the credential by email and by uid', () async {
       final email = uniqueEmail();
-      await users.create(
+      final created = await credentials.createAccount(
         firstName: 'Ada',
         lastName: 'Lovelace',
         email: email,
         passwordHash: 'digest',
       );
 
-      final found = await users.findByEmail(email);
-      expect(found!.passwordHash, equals('digest'));
-    });
+      final byEmail = await credentials.findByEmail(email);
+      expect(byEmail!.uid, equals(created!.uid));
+      expect(byEmail.passwordHash, equals('digest'));
 
-    // /auth/me does not select the column, so the model has to cope with it
-    // being absent from the row.
-    test('findByUid omits the password hash', () async {
-      final created = await users.create(
-        firstName: 'Ada',
-        lastName: 'Lovelace',
-        email: uniqueEmail(),
-        passwordHash: 'digest',
-      );
-
-      final found = await users.findByUid(created!.uid);
-      expect(found!.passwordHash, isNull);
+      final byUid = await credentials.findByUid(created.uid);
+      expect(byUid!.passwordHash, equals('digest'));
     });
 
     test('returns null for an unknown email and uid', () async {
-      expect(await users.findByEmail('nobody@example.com'), isNull);
-      expect(await users.findByUid('no-such-uid'), isNull);
+      expect(await credentials.findByEmail('nobody@example.com'), isNull);
+      expect(await credentials.findByUid('no-such-uid'), isNull);
     });
 
     test('updates the stored password digest', () async {
       final email = uniqueEmail();
-      final created = await users.create(
+      final created = await credentials.createAccount(
         firstName: 'Ada',
         lastName: 'Lovelace',
         email: email,
         passwordHash: 'old-digest',
       );
 
-      await users.updatePasswordHash(created!.uid, 'new-digest');
+      await credentials.updatePasswordHash(created!.uid, 'new-digest');
 
-      final found = await users.findByEmail(email);
+      final found = await credentials.findByEmail(email);
       expect(found!.passwordHash, equals('new-digest'));
     });
 
     test('updating an unknown uid is a no-op rather than an error', () async {
       await expectLater(
-        users.updatePasswordHash('no-such-uid', 'digest'),
+        credentials.updatePasswordHash('no-such-uid', 'digest'),
         completes,
       );
     });
@@ -308,25 +300,83 @@ void main() {
     test('migrates a legacy digest to bcrypt and back out again', () async {
       final hasher = BcryptPasswordHasher(rounds: 4);
       final email = uniqueEmail();
-      final created = await users.create(
+      final created = await credentials.createAccount(
         firstName: 'Ada',
         lastName: 'Lovelace',
         email: email,
         passwordHash: legacySha256Digest('hunter2'),
       );
 
-      final legacy = await users.findByEmail(email);
-      expect(hasher.verify('hunter2', legacy!.passwordHash!), isTrue);
-      expect(hasher.needsRehash(legacy.passwordHash!), isTrue);
+      final legacy = await credentials.findByEmail(email);
+      expect(hasher.verify('hunter2', legacy!.passwordHash), isTrue);
+      expect(hasher.needsRehash(legacy.passwordHash), isTrue);
 
-      await users.updatePasswordHash(created!.uid, hasher.hash('hunter2'));
+      await credentials.updatePasswordHash(
+        created!.uid,
+        hasher.hash('hunter2'),
+      );
 
-      final upgraded = await users.findByEmail(email);
+      final upgraded = await credentials.findByEmail(email);
       expect(upgraded!.passwordHash, startsWith(r'$2a$'));
       expect(upgraded.passwordHash, hasLength(60));
-      expect(hasher.verify('hunter2', upgraded.passwordHash!), isTrue);
-      expect(hasher.verify('wrong', upgraded.passwordHash!), isFalse);
-      expect(hasher.needsRehash(upgraded.passwordHash!), isFalse);
+      expect(hasher.verify('hunter2', upgraded.passwordHash), isTrue);
+      expect(hasher.verify('wrong', upgraded.passwordHash), isFalse);
+      expect(hasher.needsRehash(upgraded.passwordHash), isFalse);
+    });
+  });
+
+  group('UserRepository', () {
+    test('finds a profile by email and by uid', () async {
+      final email = uniqueEmail();
+      final created = await credentials.createAccount(
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: email,
+        passwordHash: 'digest',
+      );
+
+      expect((await users.findByEmail(email))!.uid, equals(created!.uid));
+      expect((await users.findByUid(created.uid))!.email, equals(email));
+    });
+
+    test('returns null for an unknown email and uid', () async {
+      expect(await users.findByEmail('nobody@example.com'), isNull);
+      expect(await users.findByUid('no-such-uid'), isNull);
+    });
+
+    // Needs the ON DELETE SET NULL from migration 004: without it, any user
+    // who has ever ordered cannot be deleted at all.
+    test('delete keeps past orders, detached and scrubbed', () async {
+      final user = await credentials.createAccount(
+        firstName: 'Gone',
+        lastName: 'Soon',
+        email: uniqueEmail(),
+        passwordHash: 'digest',
+      );
+      final product = (await products.findById(1))!;
+      final order = await orders.create(
+        Order(
+          id: 'itest-deleted-owner-${DateTime.now().microsecondsSinceEpoch}',
+          userId: user!.uid,
+          cost: product.price,
+          status: 'received',
+          orderTime: DateTime.utc(2026, 8, 15, 12),
+          restaurantInfo: (await restaurants.findById(1))!.toJson(),
+          products: [OrderProduct.from(product, 1)],
+          deliveryAddress: const {'street': '1 Test Way', 'city': 'Tashkent'},
+          courier: null,
+          paymentDetail: const {'type': 'card', 'last4': '4242'},
+        ),
+      );
+
+      await users.delete(user.uid);
+
+      expect(await users.findByUid(user.uid), isNull);
+      final kept = await orders.findById(order.id);
+      expect(kept, isNotNull);
+      expect(kept!.userId, isNull);
+      expect(kept.deliveryAddress, isNull);
+      expect(kept.paymentDetail, isNull);
     });
   });
 
@@ -352,7 +402,7 @@ void main() {
     late String userId;
 
     setUpAll(() async {
-      final user = await users.create(
+      final user = await credentials.createAccount(
         firstName: 'Order',
         lastName: 'Owner',
         email: uniqueEmail(),
@@ -425,7 +475,7 @@ void main() {
     // The listing must be scoped by owner; this is the query behind the
     // route-level authorisation.
     test("lists only the given user's orders", () async {
-      final other = await users.create(
+      final other = await credentials.createAccount(
         firstName: 'Someone',
         lastName: 'Else',
         email: uniqueEmail(),
@@ -458,7 +508,7 @@ void main() {
     late String userId;
 
     setUpAll(() async {
-      final user = await users.create(
+      final user = await credentials.createAccount(
         firstName: 'Favorite',
         lastName: 'Owner',
         email: uniqueEmail(),
@@ -515,7 +565,7 @@ void main() {
     });
 
     test('lists most recently favorited first', () async {
-      final other = (await users.create(
+      final other = (await credentials.createAccount(
         firstName: 'Recency',
         lastName: 'Owner',
         email: uniqueEmail(),
@@ -531,7 +581,7 @@ void main() {
     });
 
     test("does not leak another user's favorites", () async {
-      final other = (await users.create(
+      final other = (await credentials.createAccount(
         firstName: 'Someone',
         lastName: 'Else',
         email: uniqueEmail(),
@@ -553,7 +603,7 @@ void main() {
     final issuedAt = DateTime.utc(2026, 8, 15, 12);
 
     setUpAll(() async {
-      final user = await users.create(
+      final user = await credentials.createAccount(
         firstName: 'Token',
         lastName: 'Owner',
         email: uniqueEmail(),
@@ -695,7 +745,7 @@ void main() {
 
     // ON DELETE CASCADE: removing a user must not leave orphan tokens behind.
     test("drops a user's tokens when the user is deleted", () async {
-      final doomed = await users.create(
+      final doomed = await credentials.createAccount(
         firstName: 'Soon',
         lastName: 'Gone',
         email: uniqueEmail(),

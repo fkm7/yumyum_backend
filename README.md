@@ -11,8 +11,19 @@ An example application built with dart_frog
 Routes are thin: they parse the request, call a repository or service, and map
 the result onto a status code. Data access lives behind the interfaces in
 `lib/repositories/`, with PostgreSQL implementations in
-`lib/repositories/postgres/`. Business logic that does not need a database —
-order pricing and validation — lives in `lib/services/` as pure functions.
+`lib/repositories/postgres/`. Business rules live in `lib/services/`.
+
+| Path | Holds |
+| --- | --- |
+| `lib/core/` | Feature-agnostic infrastructure: database connection, migration runner, HTTP error handling |
+| `lib/di/providers.dart` | The composition root — the only place concrete implementations are chosen and wired |
+| `lib/repositories/` | Repository interfaces; `postgres/` has the implementations |
+| `lib/services/` | Use cases: sessions, credentials, password reset, account deletion, order building |
+| `db/migrations/` | Versioned schema changes, applied in order by `bin/migrate.dart` |
+| `db/seeds/` | Demo catalog for development and CI; never applied in production |
+
+Password digests are owned by `CredentialRepository`/`CredentialService`;
+`UserRepository` and `User` carry profile data only.
 
 That layering is what makes the routes testable: `package:postgres` types never
 reach a route, so tests mock a repository interface instead of faking a
@@ -30,6 +41,7 @@ need a live database:
 
 ```sh
 docker compose up -d
+dart run bin/migrate.dart --seed
 dart test --tags integration --run-skipped
 ```
 
@@ -84,10 +96,29 @@ Two operational notes:
   prunes them and needs to be run periodically, or the table grows without
   bound.
 
+## Database migrations
+
+Schema changes are numbered SQL files in `db/migrations/`
+(`005_short_description.sql`). `bin/migrate.dart` applies the ones not yet
+recorded in the `schema_migrations` table, each in its own transaction, under
+an advisory lock so two concurrent runs cannot interleave.
+
+```sh
+dart run bin/migrate.dart           # apply pending migrations
+dart run bin/migrate.dart --seed    # ...then load db/seeds/ (dev and CI only)
+```
+
+Never edit a migration that has been applied anywhere; add a new one. The
+existing files are idempotent (`IF NOT EXISTS`), so a database created by hand
+from the old `schema.sql` can be brought under the runner by running it once.
+
+The Docker image ships the runner as `/app/bin/migrate`, without seeds.
+
 ## Running
 
 ```sh
 docker compose up -d          # database
+dart run bin/migrate.dart --seed
 dart_frog dev                 # development, hot reload
 
 dart_frog build               # production
@@ -122,7 +153,9 @@ would be blocked.
 | `JWT_SECRET` | development fallback | Must be set in production; a warning is logged when it is not. |
 | `BCRYPT_ROUNDS` | `12` | bcrypt cost factor. Logarithmic — each increment doubles the work. Raising it migrates existing credentials on their next login. |
 | `DB_HOST` / `DB_PORT` | `localhost` / `5432` | |
-| `DB_NAME` / `DB_USER` / `DB_PASS` | `yumyum` / `felix` / `1997` | |
+| `DB_NAME` / `DB_USER` / `DB_PASS` | `delmer` / `farrukh` / `1997` | Local development only. |
+| `DATABASE_URL` | unset | Full `postgres://` URL; takes priority over `DB_*` (Fly Postgres sets it). |
+| `DB_DIR` | `db` | Where `bin/migrate.dart` finds `migrations/` and `seeds/`. |
 
 [license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [license_link]: https://opensource.org/licenses/MIT

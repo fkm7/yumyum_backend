@@ -1,8 +1,9 @@
+import 'package:uuid/uuid.dart';
+
 import 'package:yumyum_backend/auth/token_service.dart';
 import 'package:yumyum_backend/models/refresh_token_record.dart';
 import 'package:yumyum_backend/repositories/refresh_token_repository.dart';
 import 'package:yumyum_backend/repositories/user_repository.dart';
-import 'package:uuid/uuid.dart';
 
 /// A freshly issued access/refresh pair.
 class TokenPair {
@@ -119,8 +120,10 @@ class SessionService {
       // Rotation means the rightful holder already exchanged this token and
       // dropped it. Seeing it again means a copy is in circulation, so the
       // successor tokens go too.
-      await _refreshTokenRepository.revokeFamily(record.familyId,
-          revokedAt: now);
+      await _refreshTokenRepository.revokeFamily(
+        record.familyId,
+        revokedAt: now,
+      );
       return RefreshReuseDetected(record.familyId);
     }
 
@@ -151,8 +154,10 @@ class SessionService {
 
     // The whole family, not just this token: logging out should not leave a
     // rotated successor usable.
-    await _refreshTokenRepository.revokeFamily(record.familyId,
-        revokedAt: _now());
+    await _refreshTokenRepository.revokeFamily(
+      record.familyId,
+      revokedAt: _now(),
+    );
   }
 
   /// Revokes every existing session for [uid] and starts a fresh one.
@@ -162,7 +167,10 @@ class SessionService {
   /// leaked token — is signed out, and the caller gets a working pair back
   /// so their own session isn't broken by the same sweep.
   Future<TokenPair> restartAllSessions(String uid) async {
-    await _refreshTokens.revokeAllForUser(uid, revokedAt: _now());
+    await _refreshTokenRepository.revokeAllRefreshTokensForUser(
+      uid,
+      revokedAt: _now(),
+    );
     return start(uid);
   }
 
@@ -200,15 +208,6 @@ class SessionService {
       refreshToken: _tokens.generateRefreshToken(uid, tokenId: tokenId),
       accessTokenExpiresAt: now.add(_tokens.accessTokenExpiresIn),
       refreshTokenExpiresAt: refreshTokenExpiresAt,
-    );
-  }
-
-  /// Revokes all reset tokens for the user with [uid].
-  Future<void> revokeAllResetTokens(String uid) async {
-    final now = _now();
-    await _refreshTokenRepository.revokeAllRefreshTokensForUser(
-      uid,
-      revokedAt: now,
     );
   }
 }

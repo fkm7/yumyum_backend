@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/password_hasher.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/credential_service.dart';
 import 'package:yumyum_backend/services/session_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
@@ -34,11 +33,11 @@ FutureOr<Response> onRequest(RequestContext context) async {
 
   // The insert is what enforces uniqueness, so a concurrent registration of the
   // same address loses here rather than racing past a preceding SELECT.
-  final user = await context.read<UserRepository>().create(
+  final user = await context.read<CredentialService>().register(
         firstName: firstName,
         lastName: lastName,
         email: email,
-        passwordHash: context.read<PasswordHasher>().hash(password),
+        password: password,
       );
 
   if (user == null) {
@@ -51,6 +50,6 @@ FutureOr<Response> onRequest(RequestContext context) async {
   final tokens = await context.read<SessionService>().start(user.uid);
   return Response.json(
     statusCode: 201,
-    body: {...tokens.toJson(), 'user': user.toJson()},
+    body: {...tokens.toJson(), 'user': user.toMap()},
   );
 }

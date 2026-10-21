@@ -1,44 +1,29 @@
-import 'package:yumyum_backend/models/password_reset_record.dart';
+import 'package:yumyum_backend/models/credential.dart';
+import 'package:yumyum_backend/models/user.dart';
 
-/// Repository for managing authentication-related data in a PostgreSQL database.
+/// Read and write access to account credentials.
+///
+/// The only repository that touches `users.password_hash`; `UserRepository`
+/// deliberately never selects or writes it.
 abstract class AuthRepository {
-  /// Creates a new refresh token record for the given user.
-  Future<void> createRefreshToken({
-    required String userId,
-    required String tokenHash,
-    required DateTime expiresAt,
+  /// Creates an account with the given profile and [passwordHash], and
+  /// returns its profile, or returns null when [email] is already registered.
+  ///
+  /// Uniqueness is enforced by the database rather than by a preceding SELECT,
+  /// so two concurrent registrations of the same address cannot both succeed.
+  Future<User?> createAccount({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String passwordHash,
   });
 
-  /// Marks the refresh token record with the given id as used.
-  Future<void> markUsedRefreshToken(String uid);
+  /// Returns the credential for [email], or null when no such account exists.
+  Future<Credential?> findByEmail(String email);
 
-  /// Finds a valid refresh token record by its hash.
-  Future<PasswordResetRecord?> findValidRefreshToken(String hashToken);
+  /// Returns the credential for [uid], or null when no such account exists.
+  Future<Credential?> findByUid(String uid);
 
-  /// Creates a new password reset record for the given user.
-  Future<void> createPasswordResetRecord({
-    required String userId,
-    required String tokenHash,
-    required DateTime expiresAt,
-  });
-
-  /// Updates the user's password hash and
-  /// marks the password reset record as used.
-  Future<void> resetPassword({
-    required String resetId,
-    required String userId,
-    required String newHash,
-  });
-
-  /// Invalidates all password reset records for the given user.
-  Future<void> invalidateAllFor(String uid);
-
-  /// Finds a valid password reset record by its hash.
-  Future<PasswordResetRecord?> findValidPasswordReset(String tokenHash);
-
-  /// Marks the password reset record with the given id as used.
-  Future<void> markPasswordResetUsed(String resetId);
-
-  /// Marks the password reset record with the given id as used.
-  Future<void> markUsedResetToken(String id);
+  /// Replaces the stored password digest for [uid].
+  Future<void> updatePasswordHash(String uid, String passwordHash);
 }

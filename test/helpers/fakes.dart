@@ -1,5 +1,11 @@
+import 'dart:core';
+
+import 'package:uuid/uuid.dart';
+
+import 'package:yumyum_backend/models/credential.dart';
 import 'package:yumyum_backend/models/refresh_token_record.dart';
 import 'package:yumyum_backend/models/user.dart';
+import 'package:yumyum_backend/repositories/auth_repository.dart';
 import 'package:yumyum_backend/repositories/refresh_token_repository.dart';
 import 'package:yumyum_backend/repositories/user_repository.dart';
 
@@ -88,17 +94,76 @@ class StubUserRepository implements UserRepository {
   Future<User?> findByEmail(String email) async => user;
 
   @override
-  Future<User?> create({
+  Future<User?> updateProfile({
+    required String uid,
+    String? phoneNumber,
+    String? firstName,
+    String? lastName,
+    String? email,
+  }) async =>
+      User(
+        uid: uid,
+        firstName: firstName ?? user?.firstName ?? '',
+        lastName: lastName ?? user?.lastName ?? '',
+        email: email ?? user?.email ?? '',
+      );
+
+  @override
+  Future<String?> getPhotoUri({required String uid}) async {
+    return null;
+  }
+
+  @override
+  Future<void> updatePhotoUri({
+    required String uid,
+    required String photoUrl,
+  }) async {}
+
+  @override
+  Future<void> delete(String uid) async {}
+}
+
+/// A [AuthRepository] holding at most one [credential], which every
+/// lookup returns and [updatePasswordHash] rewrites in place.
+class StubCredentialRepository implements AuthRepository {
+  /// Constructs a [StubCredentialRepository] holding [credential].
+  StubCredentialRepository([this.credential]);
+
+  final Uuid _uuid = const Uuid();
+
+  /// The stored credential; null means "no such account".
+  Credential? credential;
+
+  /// Every digest written through [updatePasswordHash], in order.
+  final List<String> writtenHashes = [];
+
+  @override
+  Future<User?> createAccount({
     required String firstName,
     required String lastName,
     required String email,
     required String passwordHash,
-  }) async =>
-      user;
+  }) async {
+    final uid = _uuid.v4();
+    credential = Credential(uid: uid, passwordHash: passwordHash);
+    return User(
+      uid: uid,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      photoUrl: '',
+    );
+  }
 
   @override
-  Future<void> updatePasswordHash(String uid, String passwordHash) async {}
+  Future<Credential?> findByEmail(String email) async => credential;
 
   @override
-  Future<void> delete(String uid) async {}
+  Future<Credential?> findByUid(String uid) async => credential;
+
+  @override
+  Future<void> updatePasswordHash(String uid, String passwordHash) async {
+    writtenHashes.add(passwordHash);
+    credential = Credential(uid: uid, passwordHash: passwordHash);
+  }
 }

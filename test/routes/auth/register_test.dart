@@ -1,7 +1,7 @@
 import 'package:dart_frog/dart_frog.dart';
 import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
 import 'package:yumyum_backend/models/user.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/credential_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
@@ -23,10 +23,10 @@ const _validBody = {
   'password': 'hunter2',
 };
 
-MockUserRepository _repository({User? returns = _created}) {
-  final repository = MockUserRepository();
+MockCredentialRepository _repository({User? returns = _created}) {
+  final repository = MockCredentialRepository();
   when(
-    () => repository.create(
+    () => repository.createAccount(
       firstName: any(named: 'firstName'),
       lastName: any(named: 'lastName'),
       email: any(named: 'email'),
@@ -36,9 +36,17 @@ MockUserRepository _repository({User? returns = _created}) {
   return repository;
 }
 
-Future<Response> _invoke(Request request, {MockUserRepository? repository}) {
+Future<Response> _invoke(
+  Request request, {
+  MockCredentialRepository? repository,
+}) {
   final context = TestContext(request: request)
-    ..provide<UserRepository>(repository ?? _repository());
+    ..provide<CredentialService>(
+      CredentialService(
+        credentials: repository ?? _repository(),
+        hasher: testHasher,
+      ),
+    );
   return Future.value(context.context).then(route.onRequest);
 }
 
@@ -89,7 +97,7 @@ void main() {
       );
 
       final captured = verify(
-        () => repository.create(
+        () => repository.createAccount(
           firstName: any(named: 'firstName'),
           lastName: any(named: 'lastName'),
           email: any(named: 'email'),
@@ -121,7 +129,7 @@ void main() {
         testTokens.verifyRefreshToken(json['refresh_token'] as String)?.uid,
         equals('user-1'),
       );
-      expect(json['user'], equals(_created.toJson()));
+      expect(json['user'], equals(_created.toMap()));
     });
 
     test('never leaks a password hash in the response', () async {

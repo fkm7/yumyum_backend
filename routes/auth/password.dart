@@ -1,16 +1,25 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
+
 import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/auth/password_hasher.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/auth/token_service.dart';
+import 'package:yumyum_backend/services/credential_service.dart';
 import 'package:yumyum_backend/services/session_service.dart';
 
-/// Sits under `routes/auth/`, so `authMiddleware` (applied by that
-/// tree's `_middleware.dart`) already guarantees a valid access token.
+/// Changes the caller's password. Accepts PATCH, and POST for clients built
+/// against the removed `/auth/change_password` endpoint.
 FutureOr<Response> onRequest(RequestContext context) async {
-  if (context.request.method != HttpMethod.patch) {
+  final method = context.request.method;
+  if (method != HttpMethod.patch && method != HttpMethod.post) {
     return Response(statusCode: 405);
+  }
+
+  // This route cannot sit behind authMiddleware: it shares a directory with
+  // /auth/login and /auth/register, which must stay public.
+  final uid = bearerUid(context, context.read<TokenService>());
+  if (uid == null) {
+    return Response.json(statusCode: 401, body: {'error': 'Unauthorized'});
   }
 
   final Map<String, dynamic> body;
@@ -39,38 +48,20 @@ FutureOr<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final authenticatedUser = context.read<AuthenticatedUser>();
-  final users = context.read<UserRepository>();
-  final hasher = context.read<PasswordHasher>();
-
-  final account = await users.findByUid(authenticatedUser.uid);
-  if (account == null) {
-    return Response.json(statusCode: 404, body: {'error': 'User not found'});
-  }
-
-  // findByUid deliberately omits the password hash (see UserRepository
-  // docs), so it's fetched again via email, matching the pattern used by
-  // the account-deletion endpoint.
-  final withHash = await users.findByEmail(account.email);
-  final storedHash = withHash?.passwordHash;
-  if (storedHash == null || !hasher.verify(currentPassword, storedHash)) {
+  final credentials = context.read<CredentialService>();
+  if (!await credentials.verifyByUid(uid, currentPassword)) {
     return Response.json(
       statusCode: 401,
       body: {'error': 'Incorrect current password'},
     );
   }
 
-  await users.updatePasswordHash(
-    authenticatedUser.uid,
-    hasher.hash(newPassword),
-  );
+  await credentials.setPassword(uid, newPassword);
 
   // Invalidates every other logged-in session — anyone holding the old
   // refresh token (a stolen device, a leaked token) is signed out, and the
   // caller gets a fresh pair so their own session keeps working.
-  final tokens = await context
-      .read<SessionService>()
-      .restartAllSessions(authenticatedUser.uid);
+  final tokens = await context.read<SessionService>().restartAllSessions(uid);
 
   return Response.json(body: tokens.toJson());
 }

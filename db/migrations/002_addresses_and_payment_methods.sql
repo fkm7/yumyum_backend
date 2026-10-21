@@ -1,4 +1,4 @@
--- Append to schema.sql (or run once by hand against an existing database).
+-- Saved delivery addresses and payment methods, and links to them from orders.
 
 -- One row per saved delivery address. Addresses are always looked up scoped
 -- to their owning user; there is no shared/global address.

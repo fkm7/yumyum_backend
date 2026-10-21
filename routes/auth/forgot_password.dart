@@ -1,53 +1,38 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
 
-import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:yumyum_backend/repositories/auth_repository.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
-import 'package:yumyum_backend/services/mail_service.dart';
+import 'package:yumyum_backend/services/password_reset_service.dart';
 
-String _generateToken() {
-  final rnd = Random.secure();
-  final bytes = List<int>.generate(32, (_) => rnd.nextInt(256));
-  return base64UrlEncode(bytes).replaceAll('=', '');
-}
-
-String hashToken(String token) => sha256.convert(utf8.encode(token)).toString();
-
-Future<Response> onRequest(RequestContext context) async {
+FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
-    return Response(statusCode: HttpStatus.methodNotAllowed);
+    return Response(statusCode: 405);
   }
 
-  final body = await context.request.json() as Map<String, dynamic>;
+  final Map<String, dynamic> body;
+  try {
+    body = await context.request.json() as Map<String, dynamic>;
+  } catch (_) {
+    return Response.json(statusCode: 400, body: {'error': 'Invalid JSON'});
+  }
+
   final email = (body['email'] as String?)?.trim().toLowerCase();
+  if (email == null || email.isEmpty) {
+    return Response.json(
+      statusCode: 422,
+      body: {'error': 'email is required'},
+    );
+  }
 
-  // Same response regardless of outcome
-  final response = Response.json(
-    body: {'message': 'If the account exists, an email was sent.'},
+  await context.read<PasswordResetService>().requestReset(email);
+
+  // Always the same response, whether or not the address is registered —
+  // otherwise this endpoint becomes an oracle for which emails have
+  // accounts, the same reasoning login.dart uses for an unknown email.
+  return Response.json(
+    body: {
+      'message':
+          'If that email is registered, a password reset link has been sent.',
+    },
   );
-  if (email == null || email.isEmpty) return response;
-
-  final userRepository = context.read<UserRepository>();
-  final authRespository = context.read<AuthRepository>();
-  final mailer = context.read<MailService>();
-
-  final user = await userRepository.findByEmail(email);
-  if (user == null) return response;
-
-  final token = _generateToken();
-  await authRespository.invalidateAllFor(user.uid); // one active token per user
-  await authRespository.createPasswordResetRecord(
-    userId: user.uid,
-    tokenHash: hashToken(token),
-    expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 30)),
-  );
-
-  // Fire and forget so response timing doesn't reveal whether the user exists
-  unawaited(mailer.sendResetEmail(to: user.email, token: token));
-  return response;
 }
