@@ -43,10 +43,14 @@ jobs:
       - name: Run unit tests
         run: dart test --coverage=coverage
 
-      - name: Load schema
+      - name: Migrate and seed database
         env:
-          PGPASSWORD: "1997"
-        run: psql -h localhost -U felix -d yumyum -f lib/db/schema.sql
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_NAME: yumyum
+          DB_USER: felix
+          DB_PASS: "1997"
+        run: dart run bin/migrate.dart --seed
 
       - name: Run integration tests
         env:

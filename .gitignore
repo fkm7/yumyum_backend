@@ -1,5 +1,5 @@
 # See https://www.dartlang.org/guides/libraries/private-files
-.env
+
 # Files and directories created by the Operating System
 .DS_Store
 
@@ -18,8 +18,7 @@ coverage/
 # VS Code related files
 .vscode/
 .zed
-<<<<<<< HEAD
-=======
 # Environment variables
 .env
->>>>>>> main
+# Uploads
+/uploads

@@ -1,4 +1,4 @@
-import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/core/db/database_service.dart';
 import 'package:yumyum_backend/models/restaurant_category.dart';
 import 'package:yumyum_backend/repositories/restaurant_category_repository.dart';
 

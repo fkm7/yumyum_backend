@@ -1,7 +1,8 @@
-import 'package:yumyum_backend/db/database_service.dart';
+import 'package:postgres/postgres.dart';
+
+import 'package:yumyum_backend/core/db/database_service.dart';
 import 'package:yumyum_backend/models/refresh_token_record.dart';
 import 'package:yumyum_backend/repositories/refresh_token_repository.dart';
-import 'package:postgres/postgres.dart';
 
 const _columns = '''
   id, user_id, family_id, issued_at, expires_at, revoked_at, replaced_by
@@ -83,22 +84,6 @@ class PostgresRefreshTokenRepository implements RefreshTokenRepository {
         WHERE family_id = @family_id AND revoked_at IS NULL
       '''),
       parameters: {'family_id': familyId, 'revoked_at': revokedAt},
-    );
-  }
-
-  @override
-  Future<void> revokeAllForUser(
-    String userId, {
-    required DateTime revokedAt,
-  }) async {
-    final conn = await database.connection;
-    await conn.execute(
-      Sql.named('''
-        UPDATE refresh_tokens
-        SET revoked_at = @revoked_at
-        WHERE user_id = @user_id AND revoked_at IS NULL
-      '''),
-      parameters: {'user_id': userId, 'revoked_at': revokedAt},
     );
   }
 

@@ -1,8 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/middleware/error_handler.dart';
+import 'package:yumyum_backend/core/http/error_handler.dart';
 import 'package:test/test.dart';
 
-import '../helpers/test_context.dart';
+import '../../helpers/test_context.dart';
 
 Future<Response> _run(Handler handler) {
   final context = TestContext(request: jsonRequest('GET')).context;

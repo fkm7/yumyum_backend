@@ -1,43 +1,33 @@
+import 'package:test/test.dart';
+
 import 'package:yumyum_backend/models/cart_item.dart';
 import 'package:yumyum_backend/models/category.dart';
+import 'package:yumyum_backend/models/credential.dart';
 import 'package:yumyum_backend/models/order.dart';
 import 'package:yumyum_backend/models/product.dart';
 import 'package:yumyum_backend/models/refresh_token_record.dart';
 import 'package:yumyum_backend/models/restaurant.dart';
 import 'package:yumyum_backend/models/user.dart';
-import 'package:test/test.dart';
 
 void main() {
   group('User', () {
-    test('reads a row that includes the password hash', () {
-      final user = User.fromRow(const {
+    // The users row has a password_hash column; a profile must never pick
+    // it up, even when a query selects it.
+    test('ignores a password_hash column in the row', () {
+      final user = User.fromMap(const {
         'uid': 'user-1',
         'first_name': 'Ada',
         'last_name': 'Lovelace',
         'email': 'ada@example.com',
-        'password_hash': 'digest',
+        'password_hash': 'super-secret-digest',
         'photo_url': '',
       });
 
-      expect(user.passwordHash, equals('digest'));
-    });
-
-    // /auth/me never selects password_hash, so fromRow has to tolerate its
-    // absence rather than throwing on a missing key.
-    test('reads a row that omits the password hash', () {
-      final user = User.fromRow(const {
-        'uid': 'user-1',
-        'first_name': 'Ada',
-        'last_name': 'Lovelace',
-        'email': 'ada@example.com',
-        'photo_url': '',
-      });
-
-      expect(user.passwordHash, isNull);
+      expect(user.toMap().toString(), isNot(contains('super-secret-digest')));
     });
 
     test('defaults a null photo_url to an empty string', () {
-      final user = User.fromRow(const {
+      final user = User.fromMap(const {
         'uid': 'user-1',
         'first_name': 'Ada',
         'last_name': 'Lovelace',
@@ -47,19 +37,17 @@ void main() {
 
       expect(user.photoUrl, equals(''));
     });
+  });
 
-    test('excludes the password hash from toJson', () {
-      const user = User(
-        uid: 'user-1',
-        firstName: 'Ada',
-        lastName: 'Lovelace',
-        email: 'ada@example.com',
-        photoUrl: '',
-        passwordHash: 'super-secret-digest',
-      );
+  group('Credential', () {
+    test('reads uid and password hash from a row', () {
+      final credential = Credential.fromMap(const {
+        'uid': 'user-1',
+        'password_hash': 'digest',
+      });
 
-      expect(user.toJson().containsKey('password_hash'), isFalse);
-      expect(user.toJson().toString(), isNot(contains('super-secret-digest')));
+      expect(credential.uid, equals('user-1'));
+      expect(credential.passwordHash, equals('digest'));
     });
   });
 

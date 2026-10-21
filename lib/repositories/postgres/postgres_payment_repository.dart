@@ -1,4 +1,4 @@
-import 'package:yumyum_backend/db/database_service.dart';
+import 'package:yumyum_backend/core/db/database_service.dart';
 import 'package:yumyum_backend/models/payment_method.dart';
 import 'package:yumyum_backend/repositories/payment_repository.dart';
 import 'package:postgres/postgres.dart';

@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:yumyum_backend/auth/password_hasher.dart';
 import 'package:yumyum_backend/models/password_reset_token.dart';
 import 'package:yumyum_backend/models/user.dart';
 import 'package:yumyum_backend/repositories/password_reset_token_repository.dart';
 import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/services/credential_service.dart';
 import 'package:yumyum_backend/services/email_service.dart';
 import 'package:yumyum_backend/services/session_service.dart';
 import 'package:uuid/uuid.dart';
@@ -45,7 +45,7 @@ class PasswordResetService {
     required UserRepository users,
     required PasswordResetTokenRepository tokens,
     required EmailService emailService,
-    required PasswordHasher hasher,
+    required CredentialService credentials,
     required SessionService sessions,
     required String resetUrlBase,
     Uuid uuid = const Uuid(),
@@ -54,7 +54,7 @@ class PasswordResetService {
   })  : _users = users,
         _tokens = tokens,
         _emailService = emailService,
-        _hasher = hasher,
+        _credentials = credentials,
         _sessions = sessions,
         _resetUrlBase = resetUrlBase,
         _uuid = uuid,
@@ -64,7 +64,7 @@ class PasswordResetService {
   final UserRepository _users;
   final PasswordResetTokenRepository _tokens;
   final EmailService _emailService;
-  final PasswordHasher _hasher;
+  final CredentialService _credentials;
   final SessionService _sessions;
   final String _resetUrlBase;
   final Uuid _uuid;
@@ -118,7 +118,7 @@ class PasswordResetService {
     final user = await _users.findByUid(record.userId);
     if (user == null) return const PasswordResetTokenRejected();
 
-    await _users.updatePasswordHash(user.uid, _hasher.hash(newPassword));
+    await _credentials.setPassword(user.uid, newPassword);
     await _tokens.markUsed(record.id, usedAt: now);
 
     final tokenPair = await _sessions.restartAllSessions(user.uid);

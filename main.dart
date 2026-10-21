@@ -16,7 +16,10 @@ import 'package:dart_frog/dart_frog.dart';
 /// bind IPv6 where it is available, or `HOST=127.0.0.1` to restrict to
 /// loopback.
 Future<HttpServer> run(Handler handler, InternetAddress ip, int port) {
-  return serve(handler, _address(), port);
+  final cascade = Cascade()
+      .add(createStaticFileHandler(defaultDocument: 'index.html'))
+      .add(handler);
+  return serve(cascade.handler, _address(), port);
 }
 
 InternetAddress _address() {

@@ -1,55 +1,58 @@
-import 'dart:io';
+import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:dbcrypt/dbcrypt.dart';
-import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/auth/token_service.dart';
+import 'package:yumyum_backend/services/password_reset_service.dart';
 
-import 'package:yumyum_backend/repositories/auth_repository.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
-import 'package:yumyum_backend/services/session_service.dart';
-
-import 'forgot_password.dart';
-
-Future<Response> onRequest(RequestContext context) async {
+/// Public: the caller has forgotten their password, so the emailed reset
+/// token is the only credential — no access token is required.
+FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
-    return Response(statusCode: HttpStatus.methodNotAllowed);
+    return Response(statusCode: 405);
   }
 
-  final uid = bearerUid(context, context.read<TokenService>());
-  if (uid == null) {
-    return Response.json(statusCode: 401, body: {'error': 'Unauthorized'});
+  final Map<String, dynamic> body;
+  try {
+    body = await context.request.json() as Map<String, dynamic>;
+  } catch (_) {
+    return Response.json(statusCode: 400, body: {'error': 'Invalid JSON'});
   }
 
-  final body = await context.request.json() as Map<String, dynamic>;
   final token = body['token'] as String?;
-  final password = body['password'] as String?;
+  final newPassword = (body['newPassword'] ??
+      body['new_password'] ??
+      body['password']) as String?;
 
-  if (token == null || password == null || password.length < 8) {
+  if (token == null || token.isEmpty) {
     return Response.json(
-      statusCode: HttpStatus.badRequest,
-      body: {'error': 'Invalid request'},
+      statusCode: 422,
+      body: {'error': 'token is required'},
+    );
+  }
+  if (newPassword == null || newPassword.length < 8) {
+    return Response.json(
+      statusCode: 422,
+      body: {
+        'error': 'newPassword is required and must be at least 8 characters',
+      },
     );
   }
 
-  final authRepository = context.read<AuthRepository>();
-  final userRepository = context.read<UserRepository>();
-  final sessionService = context.read<SessionService>();
+  final result = await context.read<PasswordResetService>().confirm(
+        rawToken: token,
+        newPassword: newPassword,
+      );
 
-  final record = await authRepository.findValidPasswordReset(
-    hashToken(token),
-  ); // not used, not expired
-  if (record == null) {
-    return Response.json(
-      statusCode: HttpStatus.badRequest,
-      body: {'error': 'Invalid or expired token'},
-    );
-  }
-
-  final newHash = DBCrypt().hashpw(password, DBCrypt().gensalt());
-  await userRepository.updatePasswordHash(record.userId, newHash);
-  await authRepository.markUsedResetToken(record.id);
-  await sessionService.revokeAllResetTokens(record.userId);
-
-  return Response.json(body: {'message': 'Password updated'});
+  // Reuse is answered exactly like an unknown or expired token: the caller
+  // is either an attacker guessing tokens or a client that already used
+  // this link, and neither should be told which — mirroring
+  // auth/refresh.dart's handling of RefreshReuseDetected vs RefreshRejected.
+  return switch (result) {
+    PasswordResetConfirmed(:final tokens, :final user) => Response.json(
+        body: {...tokens.toJson(), 'user': user.toMap()},
+      ),
+    PasswordResetTokenRejected() => Response.json(
+        statusCode: 401,
+        body: {'error': 'Invalid or expired reset token'},
+      ),
+  };
 }

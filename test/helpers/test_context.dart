@@ -6,6 +6,7 @@ import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
 import 'package:yumyum_backend/auth/password_hasher.dart';
 import 'package:yumyum_backend/auth/token_service.dart';
 import 'package:yumyum_backend/repositories/category_repository.dart';
+import 'package:yumyum_backend/repositories/auth_repository.dart';
 import 'package:yumyum_backend/repositories/cuisine_repository.dart';
 import 'package:yumyum_backend/repositories/favorite_repository.dart';
 import 'package:yumyum_backend/repositories/order_repository.dart';
@@ -24,6 +25,9 @@ class MockRequestContext extends Mock implements RequestContext {}
 
 /// A mock [UserRepository].
 class MockUserRepository extends Mock implements UserRepository {}
+
+/// A mock [AuthRepository].
+class MockCredentialRepository extends Mock implements AuthRepository {}
 
 /// A mock [CategoryRepository].
 class MockCategoryRepository extends Mock implements CategoryRepository {}

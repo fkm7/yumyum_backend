@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/password_hasher.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
 
-/// A public account-deletion page, reachable without the Delmer app
+import 'package:yumyum_backend/services/account_deletion_service.dart';
+
+/// A public account-deletion page, reachable without the YumYum app
 /// installed.
 ///
 /// This satisfies Google Play's requirement that account/data deletion be
@@ -52,33 +52,22 @@ Future<Response> _submit(RequestContext context) async {
     );
   }
 
-  final users = context.read<UserRepository>();
-  final hasher = context.read<PasswordHasher>();
-  final user = await users.findByEmail(email);
+  final result = await context
+      .read<AccountDeletionService>()
+      .deleteByEmail(email: email, password: password);
 
-  if (user == null) {
-    // Hash anyway, matching auth/login.dart: bcrypt is deliberately slow, so
-    // returning early here would make an unregistered address measurably
-    // faster to reject than a registered one with the wrong password.
-    hasher.verifyAbsentUser(password);
-    return _page(error: 'Invalid email or password.', email: email);
-  }
-
-  final storedHash = user.passwordHash;
-  if (storedHash == null || !hasher.verify(password, storedHash)) {
-    return _page(error: 'Invalid email or password.', email: email);
-  }
-
-  await users.delete(user.uid);
-
-  return _confirmation();
+  return switch (result) {
+    AccountDeleted() => _confirmation(),
+    AccountCredentialsRejected() =>
+      _page(error: 'Invalid email or password.', email: email),
+  };
 }
 
 Response _page({String? error, String? email}) {
   final errorHtml =
       error == null ? '' : '<p class="error">${_escape(error)}</p>';
   return _html('''
-<h1>Delete your Delmer account</h1>
+<h1>Delete your YumYum account</h1>
 <p>This permanently deletes your account, saved addresses, saved payment
 methods, and favorites.</p>
 <p>Past orders are kept as anonymized business/accounting records — the
@@ -101,7 +90,7 @@ $errorHtml
 
   <button type="submit">Delete my account and data</button>
 </form>
-<p class="note">Prefer to do this from the app? Open Delmer and go to
+<p class="note">Prefer to do this from the app? Open YumYum and go to
 Account &rarr; Delete account.</p>
 ''');
 }
@@ -123,7 +112,7 @@ Response _html(String bodyContent) => Response(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Delete your Delmer account</title>
+<title>Delete your YumYum account</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

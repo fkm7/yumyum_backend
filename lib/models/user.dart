@@ -6,22 +6,35 @@ class User {
     required this.firstName,
     required this.lastName,
     required this.email,
-    required this.photoUrl,
-    this.passwordHash,
+    this.photoUrl,
   });
 
   /// Builds a [User] from a database column map.
   ///
-  /// [passwordHash] is only populated when the query selected it; endpoints
-  /// that never need the credential simply omit the column.
-  factory User.fromRow(Map<String, dynamic> row) {
+  /// A profile never carries the password digest — see `Credential`.
+  factory User.fromMap(Map<String, dynamic> map) {
     return User(
-      uid: row['uid'] as String,
-      firstName: row['first_name'] as String,
-      lastName: row['last_name'] as String,
-      email: row['email'] as String,
-      photoUrl: (row['photo_url'] as String?) ?? '',
-      passwordHash: row['password_hash'] as String?,
+      uid: map['uid'] as String,
+      firstName: map['first_name'] as String,
+      lastName: map['last_name'] as String,
+      email: map['email'] as String,
+      photoUrl: (map['photo_url'] as String?) ?? '',
+    );
+  }
+
+  /// Creates a copy of this [User] with the given properties replaced.
+  User copyWith({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? photoUrl,
+  }) {
+    return User(
+      uid: uid,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      email: email ?? this.email,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 
@@ -38,17 +51,12 @@ class User {
   final String email;
 
   /// URL to the user's profile photo.
-  final String photoUrl;
-
-  /// The stored password digest, when loaded.
-  ///
-  /// Deliberately excluded from [toJson] so it cannot leak into a response.
-  final String? passwordHash;
+  final String? photoUrl;
 
   /// The public JSON representation of this user.
   ///
   /// Keys are snake_case to match the rest of the API and the database.
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toMap() => {
         'uid': uid,
         'first_name': firstName,
         'last_name': lastName,
