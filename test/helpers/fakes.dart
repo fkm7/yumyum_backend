@@ -1,13 +1,13 @@
 import 'dart:core';
 
 import 'package:uuid/uuid.dart';
-
-import 'package:yumyum_backend/models/credential.dart';
-import 'package:yumyum_backend/models/refresh_token_record.dart';
-import 'package:yumyum_backend/models/user.dart';
-import 'package:yumyum_backend/repositories/auth_repository.dart';
-import 'package:yumyum_backend/repositories/refresh_token_repository.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
+import 'package:yumyum_backend/features/account/domain/photo_storage.dart';
+import 'package:yumyum_backend/features/account/domain/user.dart';
+import 'package:yumyum_backend/features/account/domain/user_repository.dart';
+import 'package:yumyum_backend/features/auth/domain/auth_repository.dart';
+import 'package:yumyum_backend/features/auth/domain/credential.dart';
+import 'package:yumyum_backend/features/auth/domain/refresh_token_record.dart';
+import 'package:yumyum_backend/features/auth/domain/refresh_token_repository.dart';
 
 /// An in-memory [RefreshTokenRepository].
 ///
@@ -165,5 +165,31 @@ class StubCredentialRepository implements AuthRepository {
   Future<void> updatePasswordHash(String uid, String passwordHash) async {
     writtenHashes.add(passwordHash);
     credential = Credential(uid: uid, passwordHash: passwordHash);
+  }
+}
+
+/// A [PhotoStorage] that keeps files in memory, keyed by name.
+class InMemoryPhotoStorage implements PhotoStorage {
+  /// Every stored file's bytes, by name.
+  final Map<String, List<int>> files = {};
+
+  @override
+  Future<void> write(String name, List<int> bytes) async {
+    files[name] = bytes;
+  }
+
+  @override
+  Future<StoredFile?> read(String name) async {
+    final bytes = files[name];
+    if (bytes == null) return null;
+    return StoredFile(
+      content: () => Stream.value(bytes),
+      lastModified: DateTime.utc(2026),
+    );
+  }
+
+  @override
+  Future<void> delete(String name) async {
+    files.remove(name);
   }
 }

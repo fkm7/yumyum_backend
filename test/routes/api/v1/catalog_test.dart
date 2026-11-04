@@ -1,17 +1,16 @@
 import 'package:dart_frog/dart_frog.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
-
-import 'package:yumyum_backend/models/category.dart';
-import 'package:yumyum_backend/models/cuisine.dart';
-import 'package:yumyum_backend/models/product.dart';
-import 'package:yumyum_backend/models/restaurant.dart';
-import 'package:yumyum_backend/models/restaurant_category.dart';
-import 'package:yumyum_backend/repositories/category_repository.dart';
-import 'package:yumyum_backend/repositories/cuisine_repository.dart';
-import 'package:yumyum_backend/repositories/product_repository.dart';
-import 'package:yumyum_backend/repositories/restaurant_category_repository.dart';
-import 'package:yumyum_backend/repositories/restaurant_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/category.dart';
+import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
+import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/product.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant_category.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant_category_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 
 import '../../../../routes/api/v1/categories/index.dart' as categories;
 import '../../../../routes/api/v1/cuisines/index.dart' as cuisines;

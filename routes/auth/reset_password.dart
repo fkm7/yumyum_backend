@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/services/password_reset_service.dart';
+import 'package:yumyum_backend/features/auth/application/password_reset_service.dart';
 
 /// Public: the caller has forgotten their password, so the emailed reset
 /// token is the only credential — no access token is required.

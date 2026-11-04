@@ -1,13 +1,12 @@
 import 'package:test/test.dart';
-
-import 'package:yumyum_backend/models/cart_item.dart';
-import 'package:yumyum_backend/models/category.dart';
-import 'package:yumyum_backend/models/credential.dart';
-import 'package:yumyum_backend/models/order.dart';
-import 'package:yumyum_backend/models/product.dart';
-import 'package:yumyum_backend/models/refresh_token_record.dart';
-import 'package:yumyum_backend/models/restaurant.dart';
-import 'package:yumyum_backend/models/user.dart';
+import 'package:yumyum_backend/features/account/domain/user.dart';
+import 'package:yumyum_backend/features/auth/domain/credential.dart';
+import 'package:yumyum_backend/features/auth/domain/refresh_token_record.dart';
+import 'package:yumyum_backend/features/catalog/domain/category.dart';
+import 'package:yumyum_backend/features/catalog/domain/product.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
+import 'package:yumyum_backend/features/orders/domain/cart_item.dart';
+import 'package:yumyum_backend/features/orders/domain/order.dart';
 
 void main() {
   group('User', () {

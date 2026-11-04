@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/auth/token_service.dart';
-import 'package:yumyum_backend/services/credential_service.dart';
-import 'package:yumyum_backend/services/session_service.dart';
+import 'package:yumyum_backend/features/auth/application/credential_service.dart';
+import 'package:yumyum_backend/features/auth/application/session_service.dart';
+import 'package:yumyum_backend/features/auth/domain/token_service.dart';
+import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
 
 /// Changes the caller's password. Accepts PATCH, and POST for clients built
 /// against the removed `/auth/change_password` endpoint.

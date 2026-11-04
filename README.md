@@ -8,26 +8,46 @@ An example application built with dart_frog
 
 ## Architecture
 
-Routes are thin: they parse the request, call a repository or service, and map
-the result onto a status code. Data access lives behind the interfaces in
-`lib/repositories/`, with PostgreSQL implementations in
-`lib/repositories/postgres/`. Business rules live in `lib/services/`.
+Clean Architecture, organised by feature. Each feature under `lib/features/`
+(`auth`, `account`, `catalog`, `favorites`, `addresses`, `payments`, `orders`)
+has up to four layers:
+
+| Layer | Holds | May depend on |
+| --- | --- | --- |
+| `domain/` | Entities, pure business rules (`buildOrder`), repository and port interfaces (`TokenService`, `PasswordHasher`, `EmailService`, `PhotoStorage`) | Other features' `domain/` only. No `dart:io`, `dart_frog` or `postgres`. |
+| `application/` | Use cases (`OrderService`, `CredentialService`, `ProfileService`, ...), returning sealed results | `domain/`, other features' `application/` |
+| `infrastructure/` | Implementations of domain ports: PostgreSQL, bcrypt, JWT, SMTP, local file storage | `domain/`, `lib/core/` |
+| `presentation/` | `dart_frog`-specific glue (auth middleware) | `domain/`, `application/` |
+
+Outside the features:
 
 | Path | Holds |
 | --- | --- |
+| `routes/` | Dart Frog handlers. Parse and validate the request, call one use case, map its result to a response. |
+| `lib/di/providers.dart` | The composition root — the only file that names concrete implementations |
 | `lib/core/` | Feature-agnostic infrastructure: database connection, migration runner, HTTP error handling |
-| `lib/di/providers.dart` | The composition root — the only place concrete implementations are chosen and wired |
-| `lib/repositories/` | Repository interfaces; `postgres/` has the implementations |
-| `lib/services/` | Use cases: sessions, credentials, password reset, account deletion, order building |
-| `db/migrations/` | Versioned schema changes, applied in order by `bin/migrate.dart` |
-| `db/seeds/` | Demo catalog for development and CI; never applied in production |
+| `db/migrations/`, `db/seeds/` | Versioned schema changes and demo data, see below |
 
-Password digests are owned by `CredentialRepository`/`CredentialService`;
-`UserRepository` and `User` carry profile data only.
+Dependencies point inward only, and `test/architecture_test.dart` enforces
+it: adding, say, a `postgres` import to a domain file or an infrastructure
+import to a route fails the test suite.
 
-That layering is what makes the routes testable: `package:postgres` types never
-reach a route, so tests mock a repository interface instead of faking a
-`Connection`, `Result`, and `ResultRow`.
+Routes read application services from the request context. The one
+exception is plain catalog lookups (`GET /categories` and friends), which read
+the catalog's domain repository interfaces directly: they carry no business
+rule, so a pass-through service would add nothing, and the dependency still
+points inward.
+
+Ownership is a use-case rule: `AddressService`, `PaymentMethodService` and
+`OrderService` answer a resource owned by another user exactly like a missing
+one, so ids cannot be probed. Password digests are owned by
+`AuthRepository`/`CredentialService`; `UserRepository` and `User` carry
+profile data only.
+
+Known compromise: entities still carry `fromMap`/`fromRow` (database column
+names) and `toJson` (response shape). Moving those mappings into
+`infrastructure/` and the routes is the remaining step toward fully
+persistence- and transport-ignorant entities.
 
 ## Testing
 
@@ -52,7 +72,8 @@ Where the mock boundary goes:
 
 | Layer | How it is tested |
 | --- | --- |
-| Routes, middleware, services | Mocked repository interfaces |
+| Routes, middleware, use cases | Mocked repository interfaces and in-memory fakes |
+| Layer boundaries | `test/architecture_test.dart`, by reading imports |
 | Repository implementations | Integration tests against real PostgreSQL |
 | Models, pure logic | Plain unit tests, no mocks |
 

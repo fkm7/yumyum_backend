@@ -1,12 +1,12 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
-import 'package:yumyum_backend/auth/password_hasher.dart';
-import 'package:yumyum_backend/models/credential.dart';
-import 'package:yumyum_backend/models/user.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
-import 'package:yumyum_backend/services/credential_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
+import 'package:yumyum_backend/features/account/application/profile_service.dart';
+import 'package:yumyum_backend/features/account/domain/user.dart';
+import 'package:yumyum_backend/features/auth/application/credential_service.dart';
+import 'package:yumyum_backend/features/auth/domain/credential.dart';
+import 'package:yumyum_backend/features/auth/domain/password_hasher.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/bcrypt_password_hasher.dart';
 
 import '../../../routes/auth/login.dart' as route;
 import '../../helpers/fakes.dart';
@@ -40,7 +40,12 @@ TestContext _context(
   PasswordHasher? hasher,
 }) {
   return TestContext(request: request)
-    ..provide<UserRepository>(StubUserRepository(_user))
+    ..provide<ProfileService>(
+      ProfileService(
+        users: StubUserRepository(_user),
+        photos: InMemoryPhotoStorage(),
+      ),
+    )
     ..provide<CredentialService>(
       CredentialService(
         credentials: repository ?? _repository(found: found),

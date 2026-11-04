@@ -2,63 +2,66 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
-import 'package:yumyum_backend/auth/token_service.dart';
 import 'package:yumyum_backend/core/db/database_service.dart';
-import 'package:yumyum_backend/repositories/address_repository.dart';
-import 'package:yumyum_backend/repositories/category_repository.dart';
-import 'package:yumyum_backend/repositories/cuisine_repository.dart';
-import 'package:yumyum_backend/repositories/favorite_repository.dart';
-import 'package:yumyum_backend/repositories/order_repository.dart';
-import 'package:yumyum_backend/repositories/payment_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_address_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_category_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_auth_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_cuisine_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_favorite_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_order_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_password_reset_token_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_payment_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_product_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_refresh_token_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_restaurant_category_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_restaurant_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_user_repository.dart';
-import 'package:yumyum_backend/repositories/product_repository.dart';
-import 'package:yumyum_backend/repositories/restaurant_category_repository.dart';
-import 'package:yumyum_backend/repositories/restaurant_repository.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
-import 'package:yumyum_backend/services/account_deletion_service.dart';
-import 'package:yumyum_backend/services/console_email_service.dart';
-import 'package:yumyum_backend/services/credential_service.dart';
-import 'package:yumyum_backend/services/email_service.dart';
-import 'package:yumyum_backend/services/password_reset_service.dart';
-import 'package:yumyum_backend/services/session_service.dart';
-import 'package:yumyum_backend/services/smtp_email_service.dart';
+import 'package:yumyum_backend/features/account/application/account_deletion_service.dart';
+import 'package:yumyum_backend/features/account/application/profile_service.dart';
+import 'package:yumyum_backend/features/account/infrastructure/local_photo_storage.dart';
+import 'package:yumyum_backend/features/account/infrastructure/postgres_user_repository.dart';
+import 'package:yumyum_backend/features/addresses/application/address_service.dart';
+import 'package:yumyum_backend/features/addresses/infrastructure/postgres_address_repository.dart';
+import 'package:yumyum_backend/features/auth/application/credential_service.dart';
+import 'package:yumyum_backend/features/auth/application/password_reset_service.dart';
+import 'package:yumyum_backend/features/auth/application/session_service.dart';
+import 'package:yumyum_backend/features/auth/domain/email_service.dart';
+import 'package:yumyum_backend/features/auth/domain/token_service.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/bcrypt_password_hasher.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/console_email_service.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/jwt_token_service.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/postgres_auth_repository.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/postgres_password_reset_token_repository.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/postgres_refresh_token_repository.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/smtp_email_service.dart';
+import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant_category_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_category_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_cuisine_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_product_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_restaurant_category_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_restaurant_repository.dart';
+import 'package:yumyum_backend/features/favorites/application/favorites_service.dart';
+import 'package:yumyum_backend/features/favorites/infrastructure/postgres_favorite_repository.dart';
+import 'package:yumyum_backend/features/orders/application/order_service.dart';
+import 'package:yumyum_backend/features/orders/infrastructure/postgres_order_repository.dart';
+import 'package:yumyum_backend/features/payments/application/payment_method_service.dart';
+import 'package:yumyum_backend/features/payments/infrastructure/postgres_payment_repository.dart';
 
-/// Makes the app's repositories and services readable from a request
-/// context.
+/// Makes the app's use cases readable from a request context.
 ///
 /// The composition root: the only file that names concrete implementations
-/// (Postgres repositories, bcrypt, SMTP). Everything else depends on the
-/// interfaces, which is what lets route tests provide fakes instead.
+/// (Postgres repositories, bcrypt, JWT, SMTP, local file storage). Everything
+/// else depends on domain interfaces, which is what lets tests provide fakes.
 ///
-/// Only what a route reads is provided. Lower-level pieces — the database,
-/// the hasher, the credential, refresh-token and reset-token repositories,
-/// the email sender — are reachable only through the services that own them.
+/// Routes get application services, plus the read-only catalog repository
+/// interfaces for plain lookups that carry no business rule. Everything else
+/// — the database, the user, credential, token and order repositories, the
+/// hasher, the email sender, photo storage — is reachable only through the
+/// service that owns it.
 Middleware appProviders() {
   return (handler) => handler
       .use(provider<TokenService>((_) => _tokens))
-      .use(provider<UserRepository>((_) => _users))
       .use(provider<CategoryRepository>((_) => _categories))
       .use(provider<CuisineRepository>((_) => _cuisines))
       .use(provider<RestaurantCategoryRepository>((_) => _restaurantCategories))
       .use(provider<RestaurantRepository>((_) => _restaurants))
       .use(provider<ProductRepository>((_) => _products))
-      .use(provider<OrderRepository>((_) => _orders))
-      .use(provider<FavoriteRepository>((_) => _favorites))
-      .use(provider<AddressRepository>((_) => _addresses))
-      .use(provider<PaymentRepository>((_) => _payments))
+      .use(provider<ProfileService>((_) => _profiles))
+      .use(provider<AddressService>((_) => _addressService))
+      .use(provider<PaymentMethodService>((_) => _paymentMethods))
+      .use(provider<OrderService>((_) => _orderService))
+      .use(provider<FavoritesService>((_) => _favoritesService))
       .use(provider<CredentialService>((_) => _credentials))
       .use(provider<SessionService>((_) => _sessions))
       .use(provider<PasswordResetService>((_) => _passwordResets))
@@ -69,7 +72,7 @@ Middleware appProviders() {
 // these is a process-wide singleton. The repositories are stateless wrappers
 // around the shared connection future, not connections themselves.
 final _database = DatabaseService.instance;
-final _tokens = TokenService.fromEnvironment();
+final TokenService _tokens = JwtTokenService.fromEnvironment();
 
 final _users = PostgresUserRepository(_database);
 final _categories = PostgresCategoryRepository(_database);
@@ -77,10 +80,26 @@ final _cuisines = PostgresCuisineRepository(_database);
 final _restaurantCategories = PostgresRestaurantCategoryRepository(_database);
 final _restaurants = PostgresRestaurantRepository(_database);
 final _products = PostgresProductRepository(_database);
-final _orders = PostgresOrderRepository(_database);
-final _favorites = PostgresFavoriteRepository(_database);
-final _addresses = PostgresAddressRepository(_database);
-final _payments = PostgresPaymentRepository(_database);
+
+final _profiles = ProfileService(
+  users: _users,
+  photos: LocalPhotoStorage.fromEnvironment(),
+);
+final _addressService = AddressService(PostgresAddressRepository(_database));
+final _paymentMethods =
+    PaymentMethodService(PostgresPaymentRepository(_database));
+final _orderService = OrderService(
+  orders: PostgresOrderRepository(_database),
+  restaurants: _restaurants,
+  products: _products,
+  addresses: _addressService,
+  paymentMethods: _paymentMethods,
+);
+final _favoritesService = FavoritesService(
+  favorites: PostgresFavoriteRepository(_database),
+  products: _products,
+  restaurants: _restaurants,
+);
 
 final _credentials = CredentialService(
   credentials: PostgresAuthRepository(_database),
@@ -108,7 +127,7 @@ final _accountDeletions = AccountDeletionService(
 ///
 /// Falls back to a console logger — printing the reset link instead of
 /// emailing it — the same "safe fallback with a loud warning" shape
-/// [TokenService.fromEnvironment] already uses for a missing `JWT_SECRET`.
+/// [JwtTokenService.fromEnvironment] already uses for a missing `JWT_SECRET`.
 /// The console fallback must never be selected in production.
 EmailService _buildEmailService() {
   final host = Platform.environment['SMTP_HOST'];

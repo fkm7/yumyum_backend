@@ -1,22 +1,23 @@
 import 'dart:convert';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
-import 'package:yumyum_backend/auth/password_hasher.dart';
-import 'package:yumyum_backend/auth/token_service.dart';
-import 'package:yumyum_backend/repositories/category_repository.dart';
-import 'package:yumyum_backend/repositories/auth_repository.dart';
-import 'package:yumyum_backend/repositories/cuisine_repository.dart';
-import 'package:yumyum_backend/repositories/favorite_repository.dart';
-import 'package:yumyum_backend/repositories/order_repository.dart';
-import 'package:yumyum_backend/repositories/product_repository.dart';
-import 'package:yumyum_backend/repositories/restaurant_category_repository.dart';
-import 'package:yumyum_backend/repositories/restaurant_repository.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
-import 'package:yumyum_backend/services/session_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
+import 'package:yumyum_backend/features/account/domain/user_repository.dart';
+import 'package:yumyum_backend/features/auth/application/session_service.dart';
+import 'package:yumyum_backend/features/auth/domain/auth_repository.dart';
+import 'package:yumyum_backend/features/auth/domain/password_hasher.dart';
+import 'package:yumyum_backend/features/auth/domain/token_service.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/bcrypt_password_hasher.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/jwt_token_service.dart';
+import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
+import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant_category_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
+import 'package:yumyum_backend/features/favorites/domain/favorite_repository.dart';
+import 'package:yumyum_backend/features/orders/domain/order_repository.dart';
 
 import 'fakes.dart' show InMemoryRefreshTokenRepository, StubUserRepository;
 
@@ -58,7 +59,7 @@ class MockPasswordHasher extends Mock implements PasswordHasher {}
 class MockSessionService extends Mock implements SessionService {}
 
 /// The [TokenService] used across route tests.
-const testTokens = TokenService(secret: 'test-secret');
+const testTokens = JwtTokenService(secret: 'test-secret');
 
 /// The [PasswordHasher] used across route tests.
 ///

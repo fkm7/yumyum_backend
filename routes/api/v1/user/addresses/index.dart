@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/repositories/address_repository.dart';
+import 'package:yumyum_backend/features/addresses/application/address_service.dart';
+import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   return switch (context.request.method) {
@@ -14,8 +14,7 @@ FutureOr<Response> onRequest(RequestContext context) async {
 
 Future<Response> _list(RequestContext context) async {
   final user = context.read<AuthenticatedUser>();
-  final addresses =
-      await context.read<AddressRepository>().findByUser(user.uid);
+  final addresses = await context.read<AddressService>().list(user.uid);
   return Response.json(body: addresses.map((a) => a.toJson()).toList());
 }
 
@@ -69,8 +68,8 @@ Future<Response> _create(RequestContext context) async {
   }
 
   final user = context.read<AuthenticatedUser>();
-  final address = await context.read<AddressRepository>().create(
-        userId: user.uid,
+  final address = await context.read<AddressService>().create(
+        user.uid,
         type: (rawType as String?) ?? 'other',
         label: body['label'] as String?,
         street: street,

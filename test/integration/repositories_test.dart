@@ -1,24 +1,24 @@
 @Tags(['integration'])
 library;
 
-import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
-import 'package:yumyum_backend/core/db/database_service.dart';
-import 'package:yumyum_backend/models/category.dart';
-import 'package:yumyum_backend/models/order.dart';
-import 'package:yumyum_backend/models/refresh_token_record.dart';
-import 'package:yumyum_backend/repositories/favorite_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_category_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_auth_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_cuisine_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_favorite_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_order_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_product_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_refresh_token_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_restaurant_category_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_restaurant_repository.dart';
-import 'package:yumyum_backend/repositories/postgres/postgres_user_repository.dart';
 import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
+import 'package:yumyum_backend/core/db/database_service.dart';
+import 'package:yumyum_backend/features/account/infrastructure/postgres_user_repository.dart';
+import 'package:yumyum_backend/features/auth/domain/refresh_token_record.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/bcrypt_password_hasher.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/postgres_auth_repository.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/postgres_refresh_token_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/category.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_category_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_cuisine_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_product_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_restaurant_category_repository.dart';
+import 'package:yumyum_backend/features/catalog/infrastructure/postgres_restaurant_repository.dart';
+import 'package:yumyum_backend/features/favorites/domain/favorite_repository.dart';
+import 'package:yumyum_backend/features/favorites/infrastructure/postgres_favorite_repository.dart';
+import 'package:yumyum_backend/features/orders/domain/order.dart';
+import 'package:yumyum_backend/features/orders/infrastructure/postgres_order_repository.dart';
 
 /// These run against a real PostgreSQL migrated and seeded with
 /// `dart run bin/migrate.dart --seed` (after `docker compose up -d`). They exist to verify the things a mocked
@@ -342,6 +342,25 @@ void main() {
     test('returns null for an unknown email and uid', () async {
       expect(await users.findByEmail('nobody@example.com'), isNull);
       expect(await users.findByUid('no-such-uid'), isNull);
+    });
+
+    test('updateProfile returns the updated user', () async {
+      final created = await credentials.createAccount(
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: uniqueEmail(),
+        passwordHash: 'digest',
+      );
+
+      final updated = await users.updateProfile(
+        uid: created!.uid,
+        firstName: 'Augusta',
+      );
+
+      expect(updated, isNotNull);
+      expect(updated!.firstName, equals('Augusta'));
+      expect(updated.lastName, equals('Lovelace'));
+      expect(updated.email, equals(created.email));
     });
 
     // Needs the ON DELETE SET NULL from migration 004: without it, any user

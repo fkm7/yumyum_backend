@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:yumyum_backend/services/account_deletion_service.dart';
+import 'package:yumyum_backend/features/account/application/account_deletion_service.dart';
 
 /// A public account-deletion page, reachable without the YumYum app
 /// installed.

@@ -10,13 +10,17 @@ class _MockRequestContext extends Mock implements RequestContext {}
 
 void main() {
   group('GET /', () {
-    test('responds with a 200 and "Welcome to Dart Frog!".', () async {
-      final context = _MockRequestContext();
-      final response = await route.onRequest(context);
+    test('serves the landing page from public/index.html', () async {
+      final response = await route.onRequest(_MockRequestContext());
+
       expect(response.statusCode, equals(HttpStatus.ok));
       expect(
-        response.body(),
-        completion(equals('Welcome to Dart Frog!')),
+        response.headers[HttpHeaders.contentTypeHeader],
+        startsWith('text/html'),
+      );
+      expect(
+        await response.body(),
+        equals(File('public/index.html').readAsStringSync()),
       );
     });
   });

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/repositories/favorite_repository.dart';
+import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
+import 'package:yumyum_backend/features/favorites/application/favorites_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.delete) {
@@ -16,8 +16,8 @@ FutureOr<Response> onRequest(RequestContext context, String id) async {
 
   final user = context.read<AuthenticatedUser>();
   await context
-      .read<FavoriteRepository>()
-      .remove(user.uid, FavoriteType.restaurant, restaurantId);
+      .read<FavoritesService>()
+      .removeRestaurant(user.uid, restaurantId);
 
   return Response(statusCode: 204);
 }
