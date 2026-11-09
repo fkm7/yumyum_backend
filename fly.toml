@@ -7,6 +7,8 @@ app = 'delmer-backend'
 primary_region = 'ams'
 
 [build]
+[deploy]
+  release_command = "/app/bin/migrate"
 
 [http_service]
   internal_port = 8080

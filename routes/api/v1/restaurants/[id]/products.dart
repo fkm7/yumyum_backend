@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/repositories/product_repository.dart';
-import 'package:yumyum_backend/repositories/restaurant_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 
 FutureOr<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.get) {

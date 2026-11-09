@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
-import 'package:yumyum_backend/services/credential_service.dart';
-import 'package:yumyum_backend/services/session_service.dart';
+import 'package:yumyum_backend/features/account/application/profile_service.dart';
+import 'package:yumyum_backend/features/auth/application/credential_service.dart';
+import 'package:yumyum_backend/features/auth/application/session_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -33,7 +33,7 @@ FutureOr<Response> onRequest(RequestContext context) async {
       await context.read<CredentialService>().verifyByEmail(email, password);
   if (uid == null) return _invalidCredentials();
 
-  final user = await context.read<UserRepository>().findByUid(uid);
+  final user = await context.read<ProfileService>().find(uid);
   // Deleted between the credential check and this read.
   if (user == null) return _invalidCredentials();
 

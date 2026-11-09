@@ -1,9 +1,9 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/bcrypt_password_hasher.dart';
-import 'package:yumyum_backend/models/user.dart';
-import 'package:yumyum_backend/services/credential_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
+import 'package:yumyum_backend/features/account/domain/user.dart';
+import 'package:yumyum_backend/features/auth/application/credential_service.dart';
+import 'package:yumyum_backend/features/auth/infrastructure/bcrypt_password_hasher.dart';
 
 import '../../../routes/auth/register.dart' as route;
 import '../../helpers/test_context.dart';

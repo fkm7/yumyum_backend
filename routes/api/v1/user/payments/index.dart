@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/repositories/payment_repository.dart';
+import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
+import 'package:yumyum_backend/features/payments/application/payment_method_service.dart';
 
 FutureOr<Response> onRequest(RequestContext context) async {
   return switch (context.request.method) {
@@ -14,7 +14,7 @@ FutureOr<Response> onRequest(RequestContext context) async {
 
 Future<Response> _list(RequestContext context) async {
   final user = context.read<AuthenticatedUser>();
-  final methods = await context.read<PaymentRepository>().findByUser(user.uid);
+  final methods = await context.read<PaymentMethodService>().list(user.uid);
   return Response.json(body: methods.map((m) => m.toJson()).toList());
 }
 
@@ -34,9 +34,8 @@ Future<Response> _create(RequestContext context) async {
     );
   }
 
-  // Never accepts a full card number or CVV — only display-safe fields.
-  // A real gateway integration should add a `providerToken` field here and
-  // resolve the actual card via the gateway, not via anything in this body.
+  // Never accepts a full card number or CVV — only display-safe fields; see
+  // PaymentMethodService.
   final last4 = body['last4'];
   if (last4 != null && (last4 is! String || last4.length != 4)) {
     return Response.json(
@@ -64,8 +63,8 @@ Future<Response> _create(RequestContext context) async {
   }
 
   final user = context.read<AuthenticatedUser>();
-  final method = await context.read<PaymentRepository>().create(
-        userId: user.uid,
+  final method = await context.read<PaymentMethodService>().create(
+        user.uid,
         type: type,
         brand: body['brand'] as String?,
         last4: last4 as String?,

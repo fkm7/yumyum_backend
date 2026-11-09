@@ -1,5 +1,5 @@
 import 'package:dart_frog/dart_frog.dart';
-import 'package:yumyum_backend/auth/authenticated_user.dart';
+import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
 
 /// Every route under /api/v1/user requires a valid access token: orders,
 /// addresses, payment methods and favorites all belong to a specific user.

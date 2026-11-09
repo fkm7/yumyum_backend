@@ -1,9 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:yumyum_backend/auth/authenticated_user.dart';
-import 'package:yumyum_backend/auth/token_service.dart';
-import 'package:yumyum_backend/repositories/user_repository.dart';
-import 'package:yumyum_backend/services/account_deletion_service.dart';
+import 'package:yumyum_backend/features/account/application/account_deletion_service.dart';
+import 'package:yumyum_backend/features/account/application/profile_service.dart';
+import 'package:yumyum_backend/features/auth/domain/token_service.dart';
+import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.delete) {
@@ -31,7 +30,7 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final account = await context.read<UserRepository>().findByUid(uid);
+  final account = await context.read<ProfileService>().find(uid);
   if (account == null) {
     // Already gone (e.g. a retried request, or deleted via the web page in
     // another tab) — deletion is idempotent from the caller's perspective.
