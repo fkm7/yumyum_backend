@@ -2,7 +2,7 @@ import 'package:test/test.dart';
 import 'package:yumyum_backend/features/account/domain/user.dart';
 import 'package:yumyum_backend/features/auth/domain/credential.dart';
 import 'package:yumyum_backend/features/auth/domain/refresh_token_record.dart';
-import 'package:yumyum_backend/features/catalog/domain/category.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
 import 'package:yumyum_backend/features/orders/domain/cart_item.dart';
@@ -60,11 +60,11 @@ void main() {
         'icon': 'https://example.com/i.png',
       };
 
-      expect(Category.fromRow(row).toJson(), equals(row));
+      expect(ProductCategory.fromRow(row).toJson(), equals(row));
     });
 
     test('tolerates a null icon', () {
-      final category = Category.fromRow(const {
+      final category = ProductCategory.fromRow(const {
         'id': 1,
         'title_en': 'Burgers',
         'title_ru': 'Бургеры',
@@ -350,7 +350,7 @@ void main() {
     });
 
     test('OrderProduct.from prices the line and records the restaurant', () {
-      const category = Category(
+      const category = ProductCategory(
         id: 1,
         titleEn: 'Dessert',
         titleRu: 'Десерт',

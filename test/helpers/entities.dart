@@ -1,5 +1,5 @@
 import 'package:yumyum_backend/features/addresses/domain/address.dart';
-import 'package:yumyum_backend/features/catalog/domain/category.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
@@ -9,7 +9,7 @@ import 'package:yumyum_backend/features/payments/domain/payment_method.dart';
 /// Minimal valid entities for use-case tests. Only the fields a test cares
 /// about are parameters; everything else is a fixed, plausible value.
 
-const _category = Category(
+const _category = ProductCategory(
   id: 1,
   titleEn: 'Burgers',
   titleRu: 'Бургеры',

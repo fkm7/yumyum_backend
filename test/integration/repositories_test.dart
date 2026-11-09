@@ -9,7 +9,7 @@ import 'package:yumyum_backend/features/auth/domain/refresh_token_record.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/bcrypt_password_hasher.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/postgres_auth_repository.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/postgres_refresh_token_repository.dart';
-import 'package:yumyum_backend/features/catalog/domain/category.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_cuisine_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_product_repository.dart';
@@ -100,7 +100,7 @@ void main() {
       expect(restaurant, isNotNull);
       expect(restaurant!.address, isA<Map<String, dynamic>>());
       expect(restaurant.address['city'], equals('Tashkent'));
-      expect(restaurant.productCategories, isA<List<Category>>());
+      expect(restaurant.productCategories, isA<List<ProductCategory>>());
     });
 
     test('maps DOUBLE PRECISION onto double', () async {

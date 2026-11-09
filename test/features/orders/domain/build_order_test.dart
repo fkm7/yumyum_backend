@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
 import 'package:yumyum_backend/features/addresses/domain/address.dart';
-import 'package:yumyum_backend/features/catalog/domain/category.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
@@ -8,7 +8,7 @@ import 'package:yumyum_backend/features/catalog/domain/restaurant_category.dart'
 import 'package:yumyum_backend/features/orders/domain/build_order.dart';
 import 'package:yumyum_backend/features/orders/domain/cart_item.dart';
 
-const _category = Category(
+const _category = ProductCategory(
   id: 1,
   titleEn: 'Burgers',
   titleRu: 'Бургеры',

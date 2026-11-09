@@ -1,5 +1,5 @@
-import 'package:yumyum_backend/features/catalog/domain/category.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_category.dart';
 
 /// A model class representing a restaurant.
@@ -63,7 +63,7 @@ class Restaurant {
       maxDeliveryTime: row['max_delivery_time'] as int?,
       freeDeliveryFrom: (row['free_delivery_from'] as num?)?.toDouble(),
       productCategories: (row['product_categories'] as List<dynamic>?)
-          ?.map((e) => Category.fromRow(e as Map<String, dynamic>))
+          ?.map((e) => ProductCategory.fromRow(e as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -121,7 +121,7 @@ class Restaurant {
   final double? freeDeliveryFrom;
 
   /// The menu categories this restaurant offers.
-  final List<Category>? productCategories;
+  final List<ProductCategory>? productCategories;
 
   /// The JSON representation of this restaurant.
   Map<String, dynamic> toJson() => {

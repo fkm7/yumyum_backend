@@ -1,8 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
-import 'package:yumyum_backend/features/catalog/domain/category.dart';
-import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
@@ -12,7 +12,7 @@ import 'package:yumyum_backend/features/catalog/domain/restaurant_category.dart'
 import 'package:yumyum_backend/features/catalog/domain/restaurant_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 
-import '../../../../routes/api/v1/categories/index.dart' as categories;
+import '../../../../routes/api/v1/product-categories/index.dart' as categories;
 import '../../../../routes/api/v1/cuisines/index.dart' as cuisines;
 import '../../../../routes/api/v1/products/[id].dart' as product_by_id;
 import '../../../../routes/api/v1/products/index.dart' as products;
@@ -25,7 +25,7 @@ import '../../../../routes/api/v1/restaurants/[id]/products.dart'
 import '../../../../routes/api/v1/restaurants/index.dart' as restaurants;
 import '../../../helpers/test_context.dart';
 
-const _category = Category(
+const _category = ProductCategory(
   id: 1,
   titleEn: 'Burgers',
   titleRu: 'Бургеры',
@@ -88,7 +88,7 @@ void main() {
   group('GET /api/v1/categories', () {
     Future<Response> invoke(
       Request request, {
-      List<Category> found = const [],
+      List<ProductCategory> found = const [],
     }) {
       final repository = MockCategoryRepository();
       when(repository.findAll).thenAnswer((_) async => found);

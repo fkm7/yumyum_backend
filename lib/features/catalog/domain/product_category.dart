@@ -1,7 +1,7 @@
 /// A model class representing a product category.
-class Category {
-  /// Constructs a [Category] with the given properties.
-  const Category({
+class ProductCategory {
+  /// Constructs a [ProductCategory] with the given properties.
+  const ProductCategory({
     required this.id,
     required this.titleEn,
     required this.titleRu,
@@ -9,9 +9,9 @@ class Category {
     required this.icon,
   });
 
-  /// Builds a [Category] from a database column map.
-  factory Category.fromRow(Map<String, dynamic> row) {
-    return Category(
+  /// Builds a [ProductCategory] from a database column map.
+  factory ProductCategory.fromRow(Map<String, dynamic> row) {
+    return ProductCategory(
       id: row['id'] as int,
       titleEn: row['title_en'] as String,
       titleRu: row['title_ru'] as String,
