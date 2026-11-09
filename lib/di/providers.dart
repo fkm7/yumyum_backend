@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
-
 import 'package:yumyum_backend/core/db/database_service.dart';
 
 import 'package:yumyum_backend/features/account/application/account_deletion_service.dart';
@@ -24,6 +23,7 @@ import 'package:yumyum_backend/features/auth/infrastructure/postgres_refresh_tok
 import 'package:yumyum_backend/features/auth/infrastructure/smtp_email_service.dart';
 import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_category_repository.dart';

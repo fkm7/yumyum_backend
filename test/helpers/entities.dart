@@ -3,6 +3,7 @@ import 'package:yumyum_backend/features/catalog/domain/category.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
 import 'package:yumyum_backend/features/catalog/domain/menu_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
 import 'package:yumyum_backend/features/payments/domain/payment_method.dart';
 

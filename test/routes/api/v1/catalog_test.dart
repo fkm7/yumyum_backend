@@ -7,12 +7,15 @@ import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/menu_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 
 import '../../../../routes/api/v1/categories/index.dart' as categories;
 import '../../../../routes/api/v1/cuisines/index.dart' as cuisines;
+import '../../../../routes/api/v1/product-categories/index.dart' as categories;
 import '../../../../routes/api/v1/products/[id].dart' as product_by_id;
 import '../../../../routes/api/v1/products/index.dart' as products;
 import '../../../../routes/api/v1/restaurants/[id]/index.dart'

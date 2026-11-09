@@ -13,6 +13,7 @@ import 'package:yumyum_backend/features/auth/infrastructure/jwt_token_service.da
 import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
 import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 import 'package:yumyum_backend/features/favorites/domain/favorite_repository.dart';

@@ -4,6 +4,7 @@ import 'package:yumyum_backend/features/catalog/domain/category.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
 import 'package:yumyum_backend/features/catalog/domain/menu_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
+import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
 import 'package:yumyum_backend/features/orders/domain/build_order.dart';
 import 'package:yumyum_backend/features/orders/domain/cart_item.dart';
