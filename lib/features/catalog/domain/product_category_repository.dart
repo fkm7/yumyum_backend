@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:lib/features/catalog/domain/product_category_repository.dart
 import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
-========
-import 'package:yumyum_backend/features/catalog/domain/category.dart';
->>>>>>>> adf68415a1ab04b9a2c3ca1d923eb705057061eb:lib/features/catalog/domain/category_repository.dart
 
 /// Read access to the `product_categories` table.
 ///
