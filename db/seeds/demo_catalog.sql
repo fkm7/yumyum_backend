@@ -1,11 +1,11 @@
--- Demo catalog: categories, cuisines, restaurant categories, restaurants and
--- products for local development, CI and integration tests.
+-- Demo catalog: product categories, cuisines, restaurant categories,
+-- restaurants and products for local development, CI and integration tests.
 --
 -- Not a migration: production data is managed separately. Applied by
 -- `dart run bin/migrate.dart --seed`; every insert is idempotent
 -- (ON CONFLICT DO NOTHING), so re-running it is safe.
 
-INSERT INTO categories (id, title_en, title_ru, title_uz, icon) VALUES
+INSERT INTO product_categories (id, title_en, title_ru, title_uz, icon) VALUES
   (0, 'All', 'Все', 'Barchasi', NULL),
   (1, 'First course', 'Первое', 'Birinchi taom', 'https://delmer-backend.fly.dev/assets/categories/first_course.jpg'),
   (2, 'Second course', 'Второе', 'Ikkinchi taom', 'https://delmer-backend.fly.dev/assets/categories/second_course.jpg'),
