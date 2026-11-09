@@ -11,10 +11,10 @@ import 'package:yumyum_backend/features/auth/domain/token_service.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/bcrypt_password_hasher.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/jwt_token_service.dart';
 import 'package:yumyum_backend/features/auth/presentation/authenticated_user.dart';
+import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
-import 'package:yumyum_backend/features/catalog/domain/restaurant_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 import 'package:yumyum_backend/features/favorites/domain/favorite_repository.dart';
 import 'package:yumyum_backend/features/orders/domain/order_repository.dart';
@@ -38,10 +38,6 @@ class MockCuisineRepository extends Mock implements CuisineRepository {}
 
 /// A mock [RestaurantRepository].
 class MockRestaurantRepository extends Mock implements RestaurantRepository {}
-
-/// A mock [RestaurantCategoryRepository].
-class MockRestaurantCategoryRepository extends Mock
-    implements RestaurantCategoryRepository {}
 
 /// A mock [ProductRepository].
 class MockProductRepository extends Mock implements ProductRepository {}

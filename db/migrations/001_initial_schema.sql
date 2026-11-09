@@ -1,5 +1,7 @@
--- Product-facing categories: the course/section a product belongs to on a
--- restaurant's menu (first course, second course, dessert, ...).
+-- Food categories (Burgers, Pizza, Sushi, Dessert, ...): the only kind of
+-- category. Every product belongs to one, and a restaurant's categories are
+-- not stored but derived from its products, so searching by category finds
+-- every restaurant that actually serves that kind of food.
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY,
   title_en TEXT NOT NULL,
@@ -17,16 +19,9 @@ CREATE TABLE IF NOT EXISTS cuisines (
   icon TEXT
 );
 
--- The kind of food a restaurant is known for (Burgers, Pizza, Sushi, ...).
--- Distinct from `cuisines` (nationality) and `categories` (a product's course).
-CREATE TABLE IF NOT EXISTS restaurant_categories (
-  id INTEGER PRIMARY KEY,
-  title_en TEXT NOT NULL,
-  title_ru TEXT NOT NULL,
-  title_uz TEXT NOT NULL,
-  icon TEXT
-);
-
+-- Image columns (`logo`, `image`, `icon`) hold either an absolute URL or a
+-- host-relative `/assets/...` path, which the API resolves against the
+-- request host.
 CREATE TABLE IF NOT EXISTS restaurants (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
@@ -36,7 +31,6 @@ CREATE TABLE IF NOT EXISTS restaurants (
   address JSONB NOT NULL,
   image TEXT,
   cuisine INTEGER NOT NULL REFERENCES cuisines(id),
-  category INTEGER NOT NULL REFERENCES restaurant_categories(id),
   start_time TEXT,
   end_time TEXT,
   description TEXT,
@@ -44,8 +38,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   delivery_cost DOUBLE PRECISION,
   min_delivery_time INTEGER,
   max_delivery_time INTEGER,
-  free_delivery_from DOUBLE PRECISION,
-  product_categories JSONB
+  free_delivery_from DOUBLE PRECISION
 );
 
 CREATE TABLE IF NOT EXISTS products (
@@ -61,6 +54,11 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   unit TEXT
 );
+
+-- Category search looks up products by category and joins to restaurants;
+-- a restaurant's menu categories are read through the same columns.
+CREATE INDEX IF NOT EXISTS products_category_restaurant_idx
+  ON products (category, restaurant_id);
 
 -- For databases created before products carried a weight unit. Existing rows
 -- keep a NULL unit until backfilled.

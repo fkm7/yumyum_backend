@@ -9,11 +9,10 @@ import 'package:yumyum_backend/features/auth/domain/refresh_token_record.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/bcrypt_password_hasher.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/postgres_auth_repository.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/postgres_refresh_token_repository.dart';
-import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
+import 'package:yumyum_backend/features/catalog/domain/menu_category.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_cuisine_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_product_repository.dart';
-import 'package:yumyum_backend/features/catalog/infrastructure/postgres_restaurant_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_restaurant_repository.dart';
 import 'package:yumyum_backend/features/favorites/domain/favorite_repository.dart';
 import 'package:yumyum_backend/features/favorites/infrastructure/postgres_favorite_repository.dart';
@@ -28,7 +27,6 @@ void main() {
   final database = DatabaseService.instance;
   final categories = PostgresCategoryRepository(database);
   final cuisines = PostgresCuisineRepository(database);
-  final restaurantCategories = PostgresRestaurantCategoryRepository(database);
   final restaurants = PostgresRestaurantRepository(database);
   final products = PostgresProductRepository(database);
   final users = PostgresUserRepository(database);
@@ -61,7 +59,7 @@ void main() {
       final all = await categories.findAll();
 
       expect(all, isNotEmpty);
-      expect(all.map((c) => c.titleEn), contains('Second course'));
+      expect(all.map((c) => c.titleEn), containsAll(['Burgers', 'Sushi']));
       expect(all.first.id, isA<int>());
     });
   });
@@ -72,16 +70,6 @@ void main() {
 
       expect(all, isNotEmpty);
       expect(all.map((c) => c.titleEn), contains('Italian'));
-      expect(all.first.id, isA<int>());
-    });
-  });
-
-  group('RestaurantCategoryRepository', () {
-    test('reads the seeded restaurant categories', () async {
-      final all = await restaurantCategories.findAll();
-
-      expect(all, isNotEmpty);
-      expect(all.map((c) => c.titleEn), contains('Sushi'));
       expect(all.first.id, isA<int>());
     });
   });
@@ -100,7 +88,11 @@ void main() {
       expect(restaurant, isNotNull);
       expect(restaurant!.address, isA<Map<String, dynamic>>());
       expect(restaurant.address['city'], equals('Tashkent'));
-      expect(restaurant.productCategories, isA<List<ProductCategory>>());
+      expect(restaurant.menuCategories, isA<List<MenuCategory>>());
+      expect(
+        restaurant.menuCategories.every((c) => c.restaurantId == 1),
+        isTrue,
+      );
     });
 
     test('maps DOUBLE PRECISION onto double', () async {
@@ -118,26 +110,53 @@ void main() {
       expect(await restaurants.findById(999999), isNull);
     });
 
+    test("derives menu categories from the restaurant's products", () async {
+      // Burger House sells burgers and fries.
+      final restaurant = await restaurants.findById(1);
+      expect(
+        restaurant!.menuCategories.map((c) => c.titleEn),
+        equals(['Burgers', 'Sides']),
+      );
+    });
+
+    test('gives a restaurant with no products no menu categories', () async {
+      // Tokyo Sushi Bar: "menu coming soon".
+      final restaurant = await restaurants.findById(6);
+      expect(restaurant!.menuCategories, isEmpty);
+    });
+
     test('filters by cuisine', () async {
-      final filtered = await restaurants.findByCuisine(2);
+      final filtered = await restaurants.findAll(cuisineId: 2);
 
       expect(filtered, isNotEmpty);
       expect(filtered.every((r) => r.cuisine.id == 2), isTrue);
     });
 
     test('returns an empty list for a cuisine with no restaurants', () async {
-      expect(await restaurants.findByCuisine(999999), isEmpty);
+      expect(await restaurants.findAll(cuisineId: 999999), isEmpty);
     });
 
-    test('filters by restaurant category', () async {
-      final filtered = await restaurants.findByCategory(2);
+    // The search screen's category tap.
+    test('filters by category: restaurants with a product in it', () async {
+      // Sides (9): fries at Burger House, onion rings at Grill Master,
+      // garlic bread at Napoli Pizzeria.
+      final filtered = await restaurants.findAll(categoryId: 9);
 
-      expect(filtered, isNotEmpty);
-      expect(filtered.every((r) => r.category.id == 2), isTrue);
+      expect(filtered.map((r) => r.id), equals([1, 4, 5]));
+      expect(
+        filtered.every((r) => r.menuCategories.any((c) => c.id == 9)),
+        isTrue,
+      );
+    });
+
+    test('combines cuisine and category filters', () async {
+      // Pizza (2) at Italian (2) restaurants: Pizza Palace and Napoli.
+      final filtered = await restaurants.findAll(cuisineId: 2, categoryId: 2);
+      expect(filtered.map((r) => r.id), equals([2, 5]));
     });
 
     test('returns an empty list for a category with no restaurants', () async {
-      expect(await restaurants.findByCategory(999999), isEmpty);
+      expect(await restaurants.findAll(categoryId: 999999), isEmpty);
     });
 
     // findByIds uses `= ANY(@ids)` with a typed int array, which only a real
@@ -162,6 +181,12 @@ void main() {
       final all = await products.findAll();
       expect(all, isNotEmpty);
       expect(all.first.price, isA<double>());
+    });
+
+    test('filters by category', () async {
+      final soups = await products.findAll(categoryId: 8);
+      expect(soups.map((p) => p.titleEn), equals(['Miso Soup']));
+      expect(soups.single.category.titleEn, equals('Soups'));
     });
 
     test('finds a product by id', () async {

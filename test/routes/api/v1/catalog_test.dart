@@ -1,23 +1,23 @@
 import 'package:dart_frog/dart_frog.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
+import 'package:yumyum_backend/features/catalog/domain/category.dart';
+import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/menu_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
-import 'package:yumyum_backend/features/catalog/domain/restaurant_category.dart';
-import 'package:yumyum_backend/features/catalog/domain/restaurant_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 
+import '../../../../routes/api/v1/categories/index.dart' as categories;
 import '../../../../routes/api/v1/cuisines/index.dart' as cuisines;
 import '../../../../routes/api/v1/product-categories/index.dart' as categories;
 import '../../../../routes/api/v1/products/[id].dart' as product_by_id;
 import '../../../../routes/api/v1/products/index.dart' as products;
-import '../../../../routes/api/v1/restaurant-categories/index.dart'
-    as restaurant_categories;
 import '../../../../routes/api/v1/restaurants/[id]/index.dart'
     as restaurant_by_id;
 import '../../../../routes/api/v1/restaurants/[id]/products.dart'
@@ -25,7 +25,7 @@ import '../../../../routes/api/v1/restaurants/[id]/products.dart'
 import '../../../../routes/api/v1/restaurants/index.dart' as restaurants;
 import '../../../helpers/test_context.dart';
 
-const _category = ProductCategory(
+const _category = Category(
   id: 1,
   titleEn: 'Burgers',
   titleRu: 'Бургеры',
@@ -39,14 +39,6 @@ const _cuisine = Cuisine(
   titleRu: 'Американская',
   titleUz: 'Amerika oshxonasi',
   icon: 'https://example.com/american.png',
-);
-
-const _restaurantCategory = RestaurantCategory(
-  id: 1,
-  titleEn: 'Burgers',
-  titleRu: 'Бургеры',
-  titleUz: 'Burgerlar',
-  icon: 'https://example.com/burgers.png',
 );
 
 const _product = Product(
@@ -63,6 +55,14 @@ const _product = Product(
   unit: null,
 );
 
+const _menuCategory = MenuCategory(
+  id: 1,
+  restaurantId: 1,
+  titleEn: 'Burgers',
+  titleRu: 'Бургеры',
+  titleUz: 'Burgerlar',
+);
+
 const _restaurant = Restaurant(
   id: 1,
   name: 'Burger House',
@@ -72,7 +72,6 @@ const _restaurant = Restaurant(
   address: {'city': 'Tashkent'},
   image: null,
   cuisine: _cuisine,
-  category: _restaurantCategory,
   startTime: '09:00',
   endTime: '23:00',
   description: null,
@@ -81,14 +80,14 @@ const _restaurant = Restaurant(
   minDeliveryTime: 20,
   maxDeliveryTime: 40,
   freeDeliveryFrom: 50000,
-  productCategories: [_category],
+  menuCategories: [_menuCategory],
 );
 
 void main() {
   group('GET /api/v1/categories', () {
     Future<Response> invoke(
       Request request, {
-      List<ProductCategory> found = const [],
+      List<Category> found = const [],
     }) {
       final repository = MockCategoryRepository();
       when(repository.findAll).thenAnswer((_) async => found);
@@ -141,40 +140,11 @@ void main() {
     });
   });
 
-  group('GET /api/v1/restaurant-categories', () {
-    Future<Response> invoke(
-      Request request, {
-      List<RestaurantCategory> found = const [],
-    }) {
-      final repository = MockRestaurantCategoryRepository();
-      when(repository.findAll).thenAnswer((_) async => found);
-      final context = TestContext(request: request)
-        ..provide<RestaurantCategoryRepository>(repository);
-      return Future.value(context.context)
-          .then(restaurant_categories.onRequest);
-    }
-
-    test('rejects every method except GET', () async {
-      await expectMethodNotAllowed(invoke, allowed: {'GET'});
-    });
-
-    test('returns an empty array when there are none', () async {
-      final response = await invoke(jsonRequest('GET'));
-      expect(response.statusCode, equals(200));
-      expect(await jsonBody(response), isEmpty);
-    });
-
-    test('serialises restaurant categories in snake_case', () async {
-      final response =
-          await invoke(jsonRequest('GET'), found: [_restaurantCategory]);
-      expect(await jsonBody(response), equals([_restaurantCategory.toJson()]));
-    });
-  });
-
   group('GET /api/v1/products', () {
     Future<Response> invoke(Request request, {List<Product> found = const []}) {
       final repository = MockProductRepository();
-      when(repository.findAll).thenAnswer((_) async => found);
+      when(() => repository.findAll(categoryId: any(named: 'categoryId')))
+          .thenAnswer((_) async => found);
       final context = TestContext(request: request)
         ..provide<ProductRepository>(repository);
       return Future.value(context.context).then(products.onRequest);
@@ -187,6 +157,44 @@ void main() {
     test('serialises products in snake_case', () async {
       final response = await invoke(jsonRequest('GET'), found: [_product]);
       expect(await jsonBody(response), equals([_product.toJson()]));
+    });
+
+    test('returns every product when no category is given', () async {
+      final repository = MockProductRepository();
+      when(() => repository.findAll(categoryId: any(named: 'categoryId')))
+          .thenAnswer((_) async => [_product]);
+      final context = TestContext(request: jsonRequest('GET'))
+        ..provide<ProductRepository>(repository);
+
+      await products.onRequest(context.context);
+
+      verify(repository.findAll).called(1);
+    });
+
+    test('filters by category when one is given', () async {
+      final repository = MockProductRepository();
+      when(() => repository.findAll(categoryId: any(named: 'categoryId')))
+          .thenAnswer((_) async => [_product]);
+      final context = TestContext(
+        request: jsonRequest('GET', query: {'category': '1'}),
+      )..provide<ProductRepository>(repository);
+
+      final response = await products.onRequest(context.context);
+
+      expect(response.statusCode, equals(200));
+      verify(() => repository.findAll(categoryId: 1)).called(1);
+    });
+
+    test('responds 400 for a non-numeric category', () async {
+      final response = await invoke(
+        jsonRequest('GET', query: {'category': 'abc'}),
+      );
+
+      expect(response.statusCode, equals(400));
+      expect(
+        await jsonBody(response),
+        equals({'error': 'category must be an integer'}),
+      );
     });
   });
 
@@ -244,75 +252,80 @@ void main() {
   });
 
   group('GET /api/v1/restaurants', () {
+    MockRestaurantRepository repositoryReturning(List<Restaurant> found) {
+      final repository = MockRestaurantRepository();
+      when(
+        () => repository.findAll(
+          cuisineId: any(named: 'cuisineId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => found);
+      return repository;
+    }
+
     Future<Response> invoke(
       Request request, {
-      List<Restaurant> all = const [],
-      List<Restaurant> byCuisine = const [],
-      List<Restaurant> byCategory = const [],
+      List<Restaurant> found = const [],
     }) {
-      final repository = MockRestaurantRepository();
-      when(repository.findAll).thenAnswer((_) async => all);
-      when(() => repository.findByCuisine(any()))
-          .thenAnswer((_) async => byCuisine);
-      when(() => repository.findByCategory(any()))
-          .thenAnswer((_) async => byCategory);
       final context = TestContext(request: request)
-        ..provide<RestaurantRepository>(repository);
+        ..provide<RestaurantRepository>(repositoryReturning(found));
       return Future.value(context.context).then(restaurants.onRequest);
+    }
+
+    Future<MockRestaurantRepository> invokeWithQuery(
+      Map<String, String> query,
+    ) async {
+      final repository = repositoryReturning([_restaurant]);
+      final context = TestContext(request: jsonRequest('GET', query: query))
+        ..provide<RestaurantRepository>(repository);
+      final response = await restaurants.onRequest(context.context);
+      expect(response.statusCode, equals(200));
+      return repository;
     }
 
     test('rejects every method except GET', () async {
       await expectMethodNotAllowed(invoke, allowed: {'GET'});
     });
 
+    test('serialises restaurants with their menu categories', () async {
+      final response = await invoke(jsonRequest('GET'), found: [_restaurant]);
+      final body = await jsonBody(response) as List<dynamic>;
+
+      expect(body, equals([_restaurant.toJson()]));
+      expect(
+        (body.single as Map<String, dynamic>)['menu_categories'],
+        equals([
+          {
+            'id': 1,
+            'restaurant_id': 1,
+            'title_en': 'Burgers',
+            'title_ru': 'Бургеры',
+            'title_uz': 'Burgerlar',
+          },
+        ]),
+      );
+    });
+
     test('returns every restaurant when no filter is given', () async {
-      final response = await invoke(jsonRequest('GET'), all: [_restaurant]);
-      expect(await jsonBody(response), equals([_restaurant.toJson()]));
+      final repository = await invokeWithQuery({});
+      verify(repository.findAll).called(1);
     });
 
     test('filters by cuisine when one is given', () async {
-      final repository = MockRestaurantRepository();
-      when(() => repository.findByCuisine(any()))
-          .thenAnswer((_) async => [_restaurant]);
-      final context = TestContext(
-        request: jsonRequest('GET', query: {'cuisine': '2'}),
-      )..provide<RestaurantRepository>(repository);
-
-      final response = await restaurants.onRequest(context.context);
-
-      expect(response.statusCode, equals(200));
-      verify(() => repository.findByCuisine(2)).called(1);
+      final repository = await invokeWithQuery({'cuisine': '2'});
+      verify(() => repository.findAll(cuisineId: 2)).called(1);
     });
 
+    // The search screen's category tap: restaurants serving that food.
     test('filters by category when one is given', () async {
-      final repository = MockRestaurantRepository();
-      when(() => repository.findByCategory(any()))
-          .thenAnswer((_) async => [_restaurant]);
-      final context = TestContext(
-        request: jsonRequest('GET', query: {'category': '3'}),
-      )..provide<RestaurantRepository>(repository);
-
-      final response = await restaurants.onRequest(context.context);
-
-      expect(response.statusCode, equals(200));
-      verify(() => repository.findByCategory(3)).called(1);
+      final repository = await invokeWithQuery({'category': '3'});
+      verify(() => repository.findAll(categoryId: 3)).called(1);
     });
 
     test('filters by both cuisine and category when both are given', () async {
-      final repository = MockRestaurantRepository();
-      when(() => repository.findByCuisine(any()))
-          .thenAnswer((_) async => [_restaurant]);
-      final context = TestContext(
-        request: jsonRequest('GET', query: {'cuisine': '1', 'category': '999'}),
-      )..provide<RestaurantRepository>(repository);
-
-      final response = await restaurants.onRequest(context.context);
-
-      expect(response.statusCode, equals(200));
-      verify(() => repository.findByCuisine(1)).called(1);
-      // _restaurant.category is 1, not 999, so the in-memory category filter
-      // on top of findByCuisine's results excludes it.
-      expect(await jsonBody(response), isEmpty);
+      final repository =
+          await invokeWithQuery({'cuisine': '1', 'category': '3'});
+      verify(() => repository.findAll(cuisineId: 1, categoryId: 3)).called(1);
     });
 
     // `?cuisine=abc` used to become a NULL parameter, quietly matching

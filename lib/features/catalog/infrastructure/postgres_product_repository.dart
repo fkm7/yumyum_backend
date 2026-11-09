@@ -11,7 +11,7 @@ const _columns = '''
   c.icon AS category_icon
 ''';
 
-const _from = 'products p JOIN product_categories c ON c.id = p.category';
+const _from = 'products p JOIN categories c ON c.id = p.category';
 
 /// PostgreSQL-backed [ProductRepository].
 class PostgresProductRepository implements ProductRepository {
@@ -22,10 +22,15 @@ class PostgresProductRepository implements ProductRepository {
   final DatabaseService database;
 
   @override
-  Future<List<Product>> findAll() async {
+  Future<List<Product>> findAll({int? categoryId}) async {
     final db = await database.connection;
     final result = await db.execute(
-      'SELECT $_columns FROM $_from ORDER BY p.id',
+      Sql.named(
+        'SELECT $_columns FROM $_from '
+        '${categoryId == null ? '' : 'WHERE p.category = @category '}'
+        'ORDER BY p.id',
+      ),
+      parameters: {if (categoryId != null) 'category': categoryId},
     );
     return _map(result);
   }

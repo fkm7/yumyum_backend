@@ -2,8 +2,8 @@ import 'package:yumyum_backend/features/catalog/domain/product.dart';
 
 /// Read access to the `products` table.
 abstract class ProductRepository {
-  /// Returns every product, ordered by id.
-  Future<List<Product>> findAll();
+  /// Returns every product ordered by id, or only those in [categoryId].
+  Future<List<Product>> findAll({int? categoryId});
 
   /// Returns the product with the given id, or null when absent.
   Future<Product?> findById(int id);

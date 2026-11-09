@@ -2,6 +2,7 @@ import 'package:test/test.dart';
 import 'package:yumyum_backend/features/account/domain/user.dart';
 import 'package:yumyum_backend/features/auth/domain/credential.dart';
 import 'package:yumyum_backend/features/auth/domain/refresh_token_record.dart';
+import 'package:yumyum_backend/features/catalog/domain/category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
@@ -60,11 +61,11 @@ void main() {
         'icon': 'https://example.com/i.png',
       };
 
-      expect(ProductCategory.fromRow(row).toJson(), equals(row));
+      expect(Category.fromRow(row).toJson(), equals(row));
     });
 
     test('tolerates a null icon', () {
-      final category = ProductCategory.fromRow(const {
+      final category = Category.fromRow(const {
         'id': 1,
         'title_en': 'Burgers',
         'title_ru': 'Бургеры',
@@ -134,11 +135,6 @@ void main() {
       'cuisine_title_ru': 'Американская',
       'cuisine_title_uz': 'Amerika oshxonasi',
       'cuisine_icon': null,
-      'category_id': 1,
-      'category_title_en': 'Burgers',
-      'category_title_ru': 'Бургеры',
-      'category_title_uz': 'Burgerlar',
-      'category_icon': null,
       'start_time': '09:00',
       'end_time': '23:00',
       'description': null,
@@ -147,18 +143,25 @@ void main() {
       'min_delivery_time': 20,
       'max_delivery_time': 40,
       'free_delivery_from': 50000.0,
-      'product_categories': [
+      'menu_categories': [
         {
-          'id': 2,
-          'title_en': 'Second course',
-          'title_ru': 'Второе',
-          'title_uz': 'Ikkinchi taom',
-          'icon': null,
+          'id': 1,
+          'restaurant_id': 1,
+          'title_en': 'Burgers',
+          'title_ru': 'Бургеры',
+          'title_uz': 'Burgerlar',
+        },
+        {
+          'id': 9,
+          'restaurant_id': 1,
+          'title_en': 'Sides',
+          'title_ru': 'Закуски',
+          'title_uz': 'Gazaklar',
         },
       ],
     };
 
-    test('nests the joined cuisine and category columns', () {
+    test('nests the joined cuisine columns', () {
       final json = Restaurant.fromRow(row).toJson();
       expect(
         json['cuisine'],
@@ -170,25 +173,32 @@ void main() {
           'icon': null,
         }),
       );
-      expect(
-        json['category'],
-        equals({
-          'id': 1,
-          'title_en': 'Burgers',
-          'title_ru': 'Бургеры',
-          'title_uz': 'Burgerlar',
-          'icon': null,
-        }),
-      );
       expect(json['id'], equals(1));
+      expect(json.containsKey('category'), isFalse);
+      expect(json.containsKey('product_categories'), isFalse);
+    });
+
+    test('serialises menu categories under menu_categories', () {
+      final json = Restaurant.fromRow(row).toJson();
+      expect(json['menu_categories'], equals(row['menu_categories']));
     });
 
     // JSONB columns arrive decoded, not as JSON strings.
-    test('reads address and product_categories as decoded JSON', () {
+    test('reads address and menu_categories as decoded JSON', () {
       final restaurant = Restaurant.fromRow(row);
       expect(restaurant.address, equals({'city': 'Tashkent'}));
-      expect(restaurant.productCategories!.single.id, equals(2));
-      expect(restaurant.productCategories!.single.titleEn, 'Second course');
+      expect(restaurant.menuCategories.map((c) => c.id), equals([1, 9]));
+      expect(restaurant.menuCategories.first.titleEn, 'Burgers');
+      expect(restaurant.menuCategories.first.restaurantId, equals(1));
+    });
+
+    test('menu categories carry restaurant_id and no icon', () {
+      final section =
+          Restaurant.fromRow(row).toJson()['menu_categories'] as List<dynamic>;
+      for (final s in section.cast<Map<String, dynamic>>()) {
+        expect(s['restaurant_id'], equals(1));
+        expect(s.containsKey('icon'), isFalse);
+      }
     });
 
     test('tolerates null nullable numerics', () {
@@ -197,12 +207,12 @@ void main() {
         'rating': null,
         'delivery_cost': null,
         'free_delivery_from': null,
-        'product_categories': null,
+        'menu_categories': null,
       });
 
       expect(restaurant.rating, isNull);
       expect(restaurant.deliveryCost, isNull);
-      expect(restaurant.productCategories, isNull);
+      expect(restaurant.menuCategories, isEmpty);
     });
   });
 
@@ -350,7 +360,7 @@ void main() {
     });
 
     test('OrderProduct.from prices the line and records the restaurant', () {
-      const category = ProductCategory(
+      const category = Category(
         id: 1,
         titleEn: 'Dessert',
         titleRu: 'Десерт',

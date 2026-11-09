@@ -2,14 +2,13 @@ import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
 
 /// Read access to the `restaurants` table.
 abstract class RestaurantRepository {
-  /// Returns every restaurant, ordered by id.
-  Future<List<Restaurant>> findAll();
-
-  /// Returns the restaurants serving the given cuisine, ordered by id.
-  Future<List<Restaurant>> findByCuisine(int cuisineId);
-
-  /// Returns the restaurants in the given restaurant category, ordered by id.
-  Future<List<Restaurant>> findByCategory(int categoryId);
+  /// Returns restaurants ordered by id, optionally narrowed down.
+  ///
+  /// [cuisineId] keeps restaurants serving that cuisine. [categoryId] keeps
+  /// restaurants with at least one product in that category — what the
+  /// search screen shows when a category is tapped. Both together must both
+  /// match; neither returns every restaurant.
+  Future<List<Restaurant>> findAll({int? cuisineId, int? categoryId});
 
   /// Returns the restaurant with the given id, or null when absent.
   Future<Restaurant?> findById(int id);

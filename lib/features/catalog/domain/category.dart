@@ -1,7 +1,12 @@
-/// A model class representing a product category.
-class ProductCategory {
-  /// Constructs a [ProductCategory] with the given properties.
-  const ProductCategory({
+/// A food category (Burgers, Pizza, Sushi, Dessert, ...).
+///
+/// The app's only category: every product belongs to one, and a
+/// restaurant's categories are derived from its products (see
+/// `Restaurant.menuCategories`), so searching by category finds every
+/// restaurant that actually serves that kind of food.
+class Category {
+  /// Constructs a [Category] with the given properties.
+  const Category({
     required this.id,
     required this.titleEn,
     required this.titleRu,
@@ -9,9 +14,9 @@ class ProductCategory {
     required this.icon,
   });
 
-  /// Builds a [ProductCategory] from a database column map.
-  factory ProductCategory.fromRow(Map<String, dynamic> row) {
-    return ProductCategory(
+  /// Builds a [Category] from a database column map.
+  factory Category.fromRow(Map<String, dynamic> row) {
+    return Category(
       id: row['id'] as int,
       titleEn: row['title_en'] as String,
       titleRu: row['title_ru'] as String,
@@ -32,7 +37,7 @@ class ProductCategory {
   /// Uzbek title.
   final String titleUz;
 
-  /// URL of the category icon, if any.
+  /// URL or `/assets/...` path of the category icon, if any.
   final String? icon;
 
   /// The JSON representation of this category.
