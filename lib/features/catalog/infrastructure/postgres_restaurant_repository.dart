@@ -4,10 +4,10 @@ import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 
 // product_categories stores a JSONB array of category ids (e.g. `[1, 2]`);
-// this expands it into the matching `categories` rows as a JSONB array of
-// objects, so Restaurant.fromRow can decode it the same way it decodes the
-// joined cuisine/category columns. NULL is preserved as NULL (no menu
-// categories recorded yet) rather than collapsing it into an empty array.
+// this expands it into the matching `product_categories` rows as a JSONB
+// array of objects, so Restaurant.fromRow can decode it the same way it
+// decodes the joined cuisine/category columns. NULL is preserved as NULL (no
+// menu categories recorded yet) rather than collapsing it into an empty array.
 const _productCategories = '''
   CASE WHEN r.product_categories IS NULL THEN NULL ELSE COALESCE(
     (
@@ -18,7 +18,7 @@ const _productCategories = '''
                  'icon', pc.icon
                ) ORDER BY pc.id
              )
-      FROM categories pc
+      FROM product_categories pc
       WHERE pc.id IN (
         SELECT jsonb_array_elements_text(r.product_categories)::int
       )

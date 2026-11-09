@@ -11,7 +11,7 @@ const _columns = '''
   c.icon AS category_icon
 ''';
 
-const _from = 'products p JOIN categories c ON c.id = p.category';
+const _from = 'products p JOIN product_categories c ON c.id = p.category';
 
 /// PostgreSQL-backed [ProductRepository].
 class PostgresProductRepository implements ProductRepository {

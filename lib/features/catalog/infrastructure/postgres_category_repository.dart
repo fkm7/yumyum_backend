@@ -14,7 +14,7 @@ class PostgresCategoryRepository implements CategoryRepository {
   Future<List<Category>> findAll() async {
     final db = await database.connection;
     final result = await db.execute(
-      'SELECT id, title_en, title_ru, title_uz, icon FROM categories '
+      'SELECT id, title_en, title_ru, title_uz, icon FROM product_categories '
       'ORDER BY id',
     );
     return result.map((row) => Category.fromRow(row.toColumnMap())).toList();
