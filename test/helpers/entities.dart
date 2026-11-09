@@ -1,15 +1,15 @@
 import 'package:yumyum_backend/features/addresses/domain/address.dart';
-import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
+import 'package:yumyum_backend/features/catalog/domain/category.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
+import 'package:yumyum_backend/features/catalog/domain/menu_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
-import 'package:yumyum_backend/features/catalog/domain/restaurant_category.dart';
 import 'package:yumyum_backend/features/payments/domain/payment_method.dart';
 
 /// Minimal valid entities for use-case tests. Only the fields a test cares
 /// about are parameters; everything else is a fixed, plausible value.
 
-const _category = ProductCategory(
+const _category = Category(
   id: 1,
   titleEn: 'Burgers',
   titleRu: 'Бургеры',
@@ -33,13 +33,6 @@ Restaurant testRestaurant({int id = 1, bool isOpen = true}) => Restaurant(
         titleUz: 'Amerika oshxonasi',
         icon: null,
       ),
-      category: const RestaurantCategory(
-        id: 1,
-        titleEn: 'Burgers',
-        titleRu: 'Бургеры',
-        titleUz: 'Burgerlar',
-        icon: null,
-      ),
       startTime: '09:00',
       endTime: '23:00',
       description: null,
@@ -48,7 +41,15 @@ Restaurant testRestaurant({int id = 1, bool isOpen = true}) => Restaurant(
       minDeliveryTime: 20,
       maxDeliveryTime: 40,
       freeDeliveryFrom: 50000,
-      productCategories: const [_category],
+      menuCategories: [
+        MenuCategory(
+          id: _category.id,
+          restaurantId: id,
+          titleEn: _category.titleEn,
+          titleRu: _category.titleRu,
+          titleUz: _category.titleUz,
+        ),
+      ],
     );
 
 /// An available [Product] with the given [id], sold by [restaurantId].

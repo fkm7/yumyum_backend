@@ -1,8 +1,12 @@
-/// A model class representing the kind of food a restaurant is known for
-/// (Burgers, Pizza, Sushi, ...), as distinct from its cuisine.
-class RestaurantCategory {
-  /// Constructs a [RestaurantCategory] with the given properties.
-  const RestaurantCategory({
+/// A food category (Burgers, Pizza, Sushi, Dessert, ...).
+///
+/// The app's only category: every product belongs to one, and a
+/// restaurant's categories are derived from its products (see
+/// `Restaurant.menuCategories`), so searching by category finds every
+/// restaurant that actually serves that kind of food.
+class Category {
+  /// Constructs a [Category] with the given properties.
+  const Category({
     required this.id,
     required this.titleEn,
     required this.titleRu,
@@ -10,9 +14,9 @@ class RestaurantCategory {
     required this.icon,
   });
 
-  /// Builds a [RestaurantCategory] from a database column map.
-  factory RestaurantCategory.fromRow(Map<String, dynamic> row) {
-    return RestaurantCategory(
+  /// Builds a [Category] from a database column map.
+  factory Category.fromRow(Map<String, dynamic> row) {
+    return Category(
       id: row['id'] as int,
       titleEn: row['title_en'] as String,
       titleRu: row['title_ru'] as String,
@@ -21,7 +25,7 @@ class RestaurantCategory {
     );
   }
 
-  /// Restaurant category identifier.
+  /// Category identifier.
   final int id;
 
   /// English title.
@@ -33,10 +37,10 @@ class RestaurantCategory {
   /// Uzbek title.
   final String titleUz;
 
-  /// URL of the restaurant category icon, if any.
+  /// URL or `/assets/...` path of the category icon, if any.
   final String? icon;
 
-  /// The JSON representation of this restaurant category.
+  /// The JSON representation of this category.
   Map<String, dynamic> toJson() => {
         'id': id,
         'title_en': titleEn,

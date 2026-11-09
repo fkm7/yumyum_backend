@@ -1,6 +1,5 @@
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
-import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
-import 'package:yumyum_backend/features/catalog/domain/restaurant_category.dart';
+import 'package:yumyum_backend/features/catalog/domain/menu_category.dart';
 
 /// A model class representing a restaurant.
 class Restaurant {
@@ -14,7 +13,6 @@ class Restaurant {
     required this.address,
     required this.image,
     required this.cuisine,
-    required this.category,
     required this.startTime,
     required this.endTime,
     required this.description,
@@ -23,14 +21,14 @@ class Restaurant {
     required this.minDeliveryTime,
     required this.maxDeliveryTime,
     required this.freeDeliveryFrom,
-    required this.productCategories,
+    required this.menuCategories,
   });
 
   /// Builds a [Restaurant] from a database column map.
   ///
-  /// `address` and `product_categories` are `JSONB` columns, which the
-  /// postgres driver returns already decoded — a [Map] and a [List] of
-  /// category row maps respectively, not JSON strings.
+  /// `address` is a `JSONB` column and `menu_categories` a `JSONB` array
+  /// built by the query, both of which the postgres driver returns already
+  /// decoded — a [Map] and a [List] of category row maps, not JSON strings.
   factory Restaurant.fromRow(Map<String, dynamic> row) {
     return Restaurant(
       id: row['id'] as int,
@@ -47,13 +45,6 @@ class Restaurant {
         titleUz: row['cuisine_title_uz'] as String,
         icon: row['cuisine_icon'] as String?,
       ),
-      category: RestaurantCategory(
-        id: row['category_id'] as int,
-        titleEn: row['category_title_en'] as String,
-        titleRu: row['category_title_ru'] as String,
-        titleUz: row['category_title_uz'] as String,
-        icon: row['category_icon'] as String?,
-      ),
       startTime: row['start_time'] as String?,
       endTime: row['end_time'] as String?,
       description: row['description'] as String?,
@@ -62,9 +53,10 @@ class Restaurant {
       minDeliveryTime: row['min_delivery_time'] as int?,
       maxDeliveryTime: row['max_delivery_time'] as int?,
       freeDeliveryFrom: (row['free_delivery_from'] as num?)?.toDouble(),
-      productCategories: (row['product_categories'] as List<dynamic>?)
-          ?.map((e) => ProductCategory.fromRow(e as Map<String, dynamic>))
-          .toList(),
+      menuCategories: [
+        for (final c in row['menu_categories'] as List<dynamic>? ?? const [])
+          MenuCategory.fromRow(c as Map<String, dynamic>),
+      ],
     );
   }
 
@@ -92,10 +84,6 @@ class Restaurant {
   /// The cuisine this restaurant serves.
   final Cuisine cuisine;
 
-  /// The kind of food this restaurant is known for (Burgers, Pizza, Sushi,
-  /// ...), as distinct from [cuisine].
-  final RestaurantCategory category;
-
   /// Opening time, as `HH:mm`.
   final String? startTime;
 
@@ -120,8 +108,9 @@ class Restaurant {
   /// Order total above which delivery is free.
   final double? freeDeliveryFrom;
 
-  /// The menu categories this restaurant offers.
-  final List<ProductCategory>? productCategories;
+  /// The menu sections of this restaurant: the distinct categories of its
+  /// products, ordered by id. Empty while it has no products.
+  final List<MenuCategory> menuCategories;
 
   /// The JSON representation of this restaurant.
   Map<String, dynamic> toJson() => {
@@ -133,7 +122,6 @@ class Restaurant {
         'address': address,
         'image': image,
         'cuisine': cuisine.toJson(),
-        'category': category.toJson(),
         'start_time': startTime,
         'end_time': endTime,
         'description': description,
@@ -142,7 +130,6 @@ class Restaurant {
         'min_delivery_time': minDeliveryTime,
         'max_delivery_time': maxDeliveryTime,
         'free_delivery_from': freeDeliveryFrom,
-        'product_categories':
-            productCategories?.map((c) => c.toJson()).toList(),
+        'menu_categories': [for (final c in menuCategories) c.toJson()],
       };
 }

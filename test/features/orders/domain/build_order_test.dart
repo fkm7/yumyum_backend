@@ -1,14 +1,14 @@
 import 'package:test/test.dart';
 import 'package:yumyum_backend/features/addresses/domain/address.dart';
-import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
+import 'package:yumyum_backend/features/catalog/domain/category.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine.dart';
+import 'package:yumyum_backend/features/catalog/domain/menu_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
-import 'package:yumyum_backend/features/catalog/domain/restaurant_category.dart';
 import 'package:yumyum_backend/features/orders/domain/build_order.dart';
 import 'package:yumyum_backend/features/orders/domain/cart_item.dart';
 
-const _category = ProductCategory(
+const _category = Category(
   id: 1,
   titleEn: 'Burgers',
   titleRu: 'Бургеры',
@@ -24,14 +24,6 @@ const _cuisine = Cuisine(
   icon: null,
 );
 
-const _restaurantCategory = RestaurantCategory(
-  id: 1,
-  titleEn: 'Burgers',
-  titleRu: 'Бургеры',
-  titleUz: 'Burgerlar',
-  icon: null,
-);
-
 Restaurant _restaurant({int id = 1, bool isOpen = true}) => Restaurant(
       id: id,
       name: 'Burger House',
@@ -41,7 +33,6 @@ Restaurant _restaurant({int id = 1, bool isOpen = true}) => Restaurant(
       address: const {'city': 'Tashkent'},
       image: null,
       cuisine: _cuisine,
-      category: _restaurantCategory,
       startTime: '09:00',
       endTime: '23:00',
       description: null,
@@ -50,7 +41,15 @@ Restaurant _restaurant({int id = 1, bool isOpen = true}) => Restaurant(
       minDeliveryTime: 20,
       maxDeliveryTime: 40,
       freeDeliveryFrom: 50000,
-      productCategories: const [_category],
+      menuCategories: [
+        MenuCategory(
+          id: _category.id,
+          restaurantId: id,
+          titleEn: _category.titleEn,
+          titleRu: _category.titleRu,
+          titleUz: _category.titleUz,
+        ),
+      ],
     );
 
 Product _product({

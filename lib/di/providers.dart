@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 
 import 'package:yumyum_backend/core/db/database_service.dart';
+
 import 'package:yumyum_backend/features/account/application/account_deletion_service.dart';
 import 'package:yumyum_backend/features/account/application/profile_service.dart';
 import 'package:yumyum_backend/features/account/infrastructure/local_photo_storage.dart';
@@ -21,15 +22,13 @@ import 'package:yumyum_backend/features/auth/infrastructure/postgres_auth_reposi
 import 'package:yumyum_backend/features/auth/infrastructure/postgres_password_reset_token_repository.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/postgres_refresh_token_repository.dart';
 import 'package:yumyum_backend/features/auth/infrastructure/smtp_email_service.dart';
-import 'package:yumyum_backend/features/catalog/domain/product_category_repository.dart';
+import 'package:yumyum_backend/features/catalog/domain/category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/cuisine_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/product_repository.dart';
-import 'package:yumyum_backend/features/catalog/domain/restaurant_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_cuisine_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_product_repository.dart';
-import 'package:yumyum_backend/features/catalog/infrastructure/postgres_restaurant_category_repository.dart';
 import 'package:yumyum_backend/features/catalog/infrastructure/postgres_restaurant_repository.dart';
 import 'package:yumyum_backend/features/favorites/application/favorites_service.dart';
 import 'package:yumyum_backend/features/favorites/infrastructure/postgres_favorite_repository.dart';
@@ -54,7 +53,6 @@ Middleware appProviders() {
       .use(provider<TokenService>((_) => _tokens))
       .use(provider<CategoryRepository>((_) => _categories))
       .use(provider<CuisineRepository>((_) => _cuisines))
-      .use(provider<RestaurantCategoryRepository>((_) => _restaurantCategories))
       .use(provider<RestaurantRepository>((_) => _restaurants))
       .use(provider<ProductRepository>((_) => _products))
       .use(provider<ProfileService>((_) => _profiles))
@@ -77,7 +75,6 @@ final TokenService _tokens = JwtTokenService.fromEnvironment();
 final _users = PostgresUserRepository(_database);
 final _categories = PostgresCategoryRepository(_database);
 final _cuisines = PostgresCuisineRepository(_database);
-final _restaurantCategories = PostgresRestaurantCategoryRepository(_database);
 final _restaurants = PostgresRestaurantRepository(_database);
 final _products = PostgresProductRepository(_database);
 

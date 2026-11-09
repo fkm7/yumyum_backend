@@ -1,4 +1,4 @@
-import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
+import 'package:yumyum_backend/features/catalog/domain/category.dart';
 
 /// A model class representing a product on a restaurant's menu.
 class Product {
@@ -26,7 +26,7 @@ class Product {
     return Product(
       id: row['id'] as int,
       restaurantId: row['restaurant_id'] as int,
-      category: ProductCategory(
+      category: Category(
         id: row['category_id'] as int,
         titleEn: row['category_title_en'] as String,
         titleRu: row['category_title_ru'] as String,
@@ -51,7 +51,7 @@ class Product {
   final int restaurantId;
 
   /// The category this product belongs to.
-  final ProductCategory category;
+  final Category category;
 
   /// Unit price.
   final double price;

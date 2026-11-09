@@ -3,48 +3,48 @@ import 'package:yumyum_backend/core/db/database_service.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant_repository.dart';
 
-// product_categories stores a JSONB array of category ids (e.g. `[1, 2]`);
-// this expands it into the matching `product_categories` rows as a JSONB
-// array of objects, so Restaurant.fromRow can decode it the same way it
-// decodes the joined cuisine/category columns. NULL is preserved as NULL (no
-// menu categories recorded yet) rather than collapsing it into an empty array.
-const _productCategories = '''
-  CASE WHEN r.product_categories IS NULL THEN NULL ELSE COALESCE(
+// A restaurant's menu sections are the distinct categories of its products,
+// as a JSONB array of {id, restaurant_id, titles} objects ordered by category
+// id (no icon), so Restaurant.fromRow decodes them like any other row. A
+// restaurant with no products gets `[]`.
+const _menuCategories = '''
+  COALESCE(
     (
       SELECT jsonb_agg(
                jsonb_build_object(
-                 'id', pc.id, 'title_en', pc.title_en,
-                 'title_ru', pc.title_ru, 'title_uz', pc.title_uz,
-                 'icon', pc.icon
-               ) ORDER BY pc.id
+                 'id', c.id, 'restaurant_id', r.id,
+                 'title_en', c.title_en, 'title_ru', c.title_ru,
+                 'title_uz', c.title_uz
+               ) ORDER BY c.id
              )
-      FROM product_categories pc
-      WHERE pc.id IN (
-        SELECT jsonb_array_elements_text(r.product_categories)::int
+      FROM categories c
+      WHERE EXISTS (
+        SELECT 1 FROM products p
+        WHERE p.restaurant_id = r.id AND p.category = c.id
       )
     ),
     '[]'::jsonb
-  ) END AS product_categories
+  ) AS menu_categories
 ''';
 
 const _columns = '''
   r.id, r.name, r.is_open, r.rating, r.logo, r.address, r.image,
   r.start_time, r.end_time, r.description, r.phone_number, r.delivery_cost,
   r.min_delivery_time, r.max_delivery_time, r.free_delivery_from,
-  $_productCategories,
+  $_menuCategories,
   cu.id AS cuisine_id, cu.title_en AS cuisine_title_en,
   cu.title_ru AS cuisine_title_ru, cu.title_uz AS cuisine_title_uz,
-  cu.icon AS cuisine_icon,
-  rc.id AS category_id, rc.title_en AS category_title_en,
-  rc.title_ru AS category_title_ru, rc.title_uz AS category_title_uz,
-  rc.icon AS category_icon
+  cu.icon AS cuisine_icon
 ''';
 
 const _from = '''
   restaurants r
   JOIN cuisines cu ON cu.id = r.cuisine
-  JOIN restaurant_categories rc ON rc.id = r.category
 ''';
+
+// Restaurants with at least one product in the requested category.
+const _servesCategory = 'EXISTS (SELECT 1 FROM products p '
+    'WHERE p.restaurant_id = r.id AND p.category = @category)';
 
 /// PostgreSQL-backed [RestaurantRepository].
 class PostgresRestaurantRepository implements RestaurantRepository {
@@ -55,36 +55,21 @@ class PostgresRestaurantRepository implements RestaurantRepository {
   final DatabaseService database;
 
   @override
-  Future<List<Restaurant>> findAll() async {
-    final db = await database.connection;
-    final result = await db.execute(
-      'SELECT $_columns FROM $_from ORDER BY r.id',
-    );
-    return _map(result);
-  }
+  Future<List<Restaurant>> findAll({int? cuisineId, int? categoryId}) async {
+    final conditions = [
+      if (cuisineId != null) 'r.cuisine = @cuisine',
+      if (categoryId != null) _servesCategory,
+    ];
+    final where =
+        conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')} ';
 
-  @override
-  Future<List<Restaurant>> findByCuisine(int cuisineId) async {
     final db = await database.connection;
     final result = await db.execute(
-      Sql.named(
-        'SELECT $_columns FROM $_from WHERE r.cuisine = @cuisine '
-        'ORDER BY r.id',
-      ),
-      parameters: {'cuisine': cuisineId},
-    );
-    return _map(result);
-  }
-
-  @override
-  Future<List<Restaurant>> findByCategory(int categoryId) async {
-    final db = await database.connection;
-    final result = await db.execute(
-      Sql.named(
-        'SELECT $_columns FROM $_from WHERE r.category = @category '
-        'ORDER BY r.id',
-      ),
-      parameters: {'category': categoryId},
+      Sql.named('SELECT $_columns FROM $_from ${where}ORDER BY r.id'),
+      parameters: {
+        if (cuisineId != null) 'cuisine': cuisineId,
+        if (categoryId != null) 'category': categoryId,
+      },
     );
     return _map(result);
   }
