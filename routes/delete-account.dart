@@ -4,7 +4,7 @@ import 'package:dart_frog/dart_frog.dart';
 
 import 'package:yumyum_backend/features/account/application/account_deletion_service.dart';
 
-/// A public account-deletion page, reachable without the YumYum app
+/// A public account-deletion page, reachable without the Delmer app
 /// installed.
 ///
 /// This satisfies Google Play's requirement that account/data deletion be
@@ -67,7 +67,7 @@ Response _page({String? error, String? email}) {
   final errorHtml =
       error == null ? '' : '<p class="error">${_escape(error)}</p>';
   return _html('''
-<h1>Delete your YumYum account</h1>
+<h1>Delete your Delmer account</h1>
 <p>This permanently deletes your account, saved addresses, saved payment
 methods, and favorites.</p>
 <p>Past orders are kept as anonymized business/accounting records — the
@@ -90,7 +90,7 @@ $errorHtml
 
   <button type="submit">Delete my account and data</button>
 </form>
-<p class="note">Prefer to do this from the app? Open YumYum and go to
+<p class="note">Prefer to do this from the app? Open Delmer and go to
 Account &rarr; Delete account.</p>
 ''');
 }
@@ -112,7 +112,7 @@ Response _html(String bodyContent) => Response(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Delete your YumYum account</title>
+<title>Delete your Delmer account</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
