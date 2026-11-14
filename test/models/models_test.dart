@@ -4,7 +4,6 @@ import 'package:yumyum_backend/features/auth/domain/credential.dart';
 import 'package:yumyum_backend/features/auth/domain/refresh_token_record.dart';
 import 'package:yumyum_backend/features/catalog/domain/category.dart';
 import 'package:yumyum_backend/features/catalog/domain/product.dart';
-import 'package:yumyum_backend/features/catalog/domain/product_category.dart';
 import 'package:yumyum_backend/features/catalog/domain/restaurant.dart';
 import 'package:yumyum_backend/features/orders/domain/cart_item.dart';
 import 'package:yumyum_backend/features/orders/domain/order.dart';
